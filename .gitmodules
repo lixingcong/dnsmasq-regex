@@ -1,0 +1,3 @@
+[submodule "dnsmasq"]
+	path = dnsmasq
+	url = git://thekelleys.org.uk/dnsmasq.git
