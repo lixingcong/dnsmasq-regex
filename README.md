@@ -37,6 +37,8 @@ make
 
 [dnsmasq\_regex\_example.conf](/dnsmasq_regex_example.conf)
 
+Tips: A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
+
 ## Openwrt/LEDE package
 
 Please check this page: [dnsmasq-regex-openwrt](https://github.com/lixingcong/dnsmasq-regex-openwrt)
