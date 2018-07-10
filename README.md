@@ -1,8 +1,10 @@
-## dnsmasq with regex and extended cache limit
+## dnsmasq with regex support
 
-Not support for regex ipset yet.
+Lastest version: 2.80test2
 
-Version: 2.80test2
+patches:
+- [001-regex-server.patch](/patches/001-regex-server.patch)
+- [002-regex-ipset.patch](/patches/002-regex-ipset.patch)
 
 Inspired by these repos:
 - [dnsmasq-regexp_2.76](https://github.com/spacedingo/dnsmasq-regexp_2.76)
