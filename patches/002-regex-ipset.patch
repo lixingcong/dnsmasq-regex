@@ -1,0 +1,126 @@
+diff --git a/src/dnsmasq.h b/src/dnsmasq.h
+index 3d21b2b..ecd6227 100644
+--- a/src/dnsmasq.h
++++ b/src/dnsmasq.h
+@@ -538,10 +538,20 @@ struct server {
+ #endif
+ };
+ 
++#ifdef HAVE_REGEX
++#define IPSET_IS_DOMAIN 0x01
++#define IPSET_IS_REGEX 0x02
++#endif
++
+ struct ipsets {
+   char **sets;
+   char *domain;
+   struct ipsets *next;
++#ifdef HAVE_REGEX
++  pcre *regex;
++  pcre_extra *pextra;
++  unsigned char domain_type;
++#endif
+ };
+ 
+ struct irec {
+diff --git a/src/forward.c b/src/forward.c
+index 21c3109..ae78230 100644
+--- a/src/forward.c
++++ b/src/forward.c
+@@ -636,6 +636,19 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+       unsigned int matchlen = 0;
+       for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
+ 	{
++#ifdef HAVE_REGEX
++	  if (ipset_pos->domain_type & IPSET_IS_REGEX){
++		  int captcount = 0;
++		  if (pcre_fullinfo(ipset_pos->regex, ipset_pos->pextra, PCRE_INFO_CAPTURECOUNT, &captcount) == 0)
++		  {
++			  /* C99 dyn-array, or alloca must be used */
++			  int ovect[(captcount + 1) * 3];
++			  if (pcre_exec(ipset_pos->regex, ipset_pos->pextra, daemon->namebuff, namelen, 0, 0, ovect, (captcount + 1) * 3) > 0){
++				  sets = ipset_pos->sets;
++			  }
++		  }
++	  }else{
++#endif
+ 	  unsigned int domainlen = strlen(ipset_pos->domain);
+ 	  char *matchstart = daemon->namebuff + namelen - domainlen;
+ 	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
+@@ -645,6 +658,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+ 	      matchlen = domainlen;
+ 	      sets = ipset_pos->sets;
+ 	    }
++#ifdef HAVE_REGEX
++	  }
++#endif
+ 	}
+     }
+ #endif
+diff --git a/src/option.c b/src/option.c
+index ad4460f..44e4e6a 100644
+--- a/src/option.c
++++ b/src/option.c
+@@ -2554,18 +2554,43 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 	     while ((end = split_chr(arg, '/'))) 
+ 	       {
+ 		 char *domain = NULL;
+-		 /* elide leading dots - they are implied in the search algorithm */
+-		 while (*arg == '.')
+-		   arg++;
+-		 /* # matches everything and becomes a zero length domain string */
+-		 if (strcmp(arg, "#") == 0 || !*arg)
+-		   domain = "";
+-		 else if (strlen(arg) != 0 && !(domain = canonicalise_opt(arg)))
+-		   option = '?';
++		 char *real_end = arg + strlen(arg);
+ 		 ipsets->next = opt_malloc(sizeof(struct ipsets));
+ 		 ipsets = ipsets->next;
+ 		 memset(ipsets, 0, sizeof(struct ipsets));
+-		 ipsets->domain = domain;
++		 if (*arg == ':' && *(real_end - 1) == ':')
++		 {
++#ifdef HAVE_REGEX
++			 const char *error;
++			 int erroff;
++			 char *regex = NULL;
++			 *(real_end - 1) = '\0';
++			 regex = arg + 1;
++			 ipsets->regex = pcre_compile(regex, 0, &error, &erroff, NULL);
++
++			 if (!ipsets->regex)
++				 ret_err(error);
++			 ipsets->pextra = pcre_study(ipsets->regex, 0, &error);
++			 ipsets->domain_type = IPSET_IS_REGEX;
++#else
++			 ret_err("Using a regex while server was configured without regex support!");
++#endif
++		 }
++		 else
++		 {
++			 /* elide leading dots - they are implied in the search algorithm */
++			 while (*arg == '.')
++				 arg++;
++			 /* # matches everything and becomes a zero length domain string */
++			 if (strcmp(arg, "#") == 0 || !*arg)
++				 domain = "";
++			 else if (strlen(arg) != 0 && !(domain = canonicalise_opt(arg)))
++				 option = '?';
++#ifdef HAVE_REGEX
++			 ipsets->domain_type = IPSET_IS_DOMAIN;
++#endif
++			 ipsets->domain = domain;
++		 }
+ 		 arg = end;
+ 	       }
+ 	   } 
+@@ -2574,6 +2599,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 	     ipsets->next = opt_malloc(sizeof(struct ipsets));
+ 	     ipsets = ipsets->next;
+ 	     memset(ipsets, 0, sizeof(struct ipsets));
++#ifdef HAVE_REGEX
++	     ipsets->domain_type = IPSET_IS_DOMAIN;
++#endif
+ 	     ipsets->domain = "";
+ 	   }
+ 	 if (!arg || !*arg)
