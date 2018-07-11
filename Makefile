@@ -11,6 +11,9 @@ $(BIN):$(PATCHED)
 	$(MAKE) remove_patched
 	$(MAKE) reset_submodule
 
+# disable parallel build for patching files
+# for preventing from producing out of order chunks
+.NOTPARALLEL: %.patched
 %.patched:%.patch
 	patch -p 1 -d dnsmasq < $^ && touch $@
 
