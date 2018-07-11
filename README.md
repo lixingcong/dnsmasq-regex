@@ -22,16 +22,22 @@ Offical dnsmasq:
 For Debian/Ubuntu:
 
 ```
+# Install libpcre3
 sudo apt install libpcre3-dev
 
+# Clone the repo
 git clone https://github.com/lixingcong/dnsmasq-regex
-
 cd dnsmasq-regex
-
 bash ./update_submodule.sh
 
-make
+# build it
+make -j2
+
+# Run the binary
+./dnsmasq/src/dnsmasq --version
 ```
+
+Tips: If you do not need the patch of ipset, just remove if from directory and build again.
 
 ## Config file example
 
