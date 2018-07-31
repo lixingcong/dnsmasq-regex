@@ -1,11 +1,5 @@
-commit 7c0a0608d6f48747b0e5c1633bfd03d2d2228612
-Author: lixingcong <lixingcong@live.com>
-Date:   Mon Jul 9 15:33:11 2018 +0800
-
-    patch for v2.80test2
-
 diff --git a/Makefile b/Makefile
-index da82868..b6f5ba3 100644
+index 3817cb0..ecebb98 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -64,6 +64,8 @@ lua_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_LUASCRIPT $(PKG_CON
@@ -40,10 +34,10 @@ index da82868..b6f5ba3 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index ecefb87..78c8b6d 100644
+index 33ff36a..ece9297 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -123,6 +123,10 @@ HAVE_LOOP
+@@ -126,6 +126,10 @@ HAVE_LOOP
  HAVE_INOTIFY
     use the Linux inotify facility to efficiently re-read configuration files.
  
@@ -54,7 +48,7 @@ index ecefb87..78c8b6d 100644
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_IPV6
-@@ -178,6 +182,7 @@ RESOLVFILE
+@@ -183,6 +187,7 @@ RESOLVFILE
  /* #define HAVE_LIBIDN2 */
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_DNSSEC */
@@ -62,7 +56,7 @@ index ecefb87..78c8b6d 100644
  
  
  /* Default locations for important system files. */
-@@ -395,6 +400,10 @@ static char *compile_opts =
+@@ -404,6 +409,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -74,10 +68,10 @@ index ecefb87..78c8b6d 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 9443405..3d21b2b 100644
+index a7c3ea8..70b0f0d 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -142,6 +142,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
+@@ -145,6 +145,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
  #include <priv.h>
  #endif
  
@@ -88,7 +82,7 @@ index 9443405..3d21b2b 100644
  #ifdef HAVE_DNSSEC
  #  include <nettle/nettle-meta.h>
  #endif
-@@ -501,6 +505,7 @@ union mysockaddr {
+@@ -513,6 +517,7 @@ union mysockaddr {
  #define SERV_LOOP           8192  /* server causes forwarding loop */
  #define SERV_DO_DNSSEC     16384  /* Validate DNSSEC when using this server */
  #define SERV_GOT_TCP       32768  /* Got some data from the TCP connection */
@@ -96,7 +90,7 @@ index 9443405..3d21b2b 100644
  
  struct serverfd {
    int fd;
-@@ -527,6 +532,10 @@ struct server {
+@@ -539,6 +544,10 @@ struct server {
    u32 uid;
  #endif
    struct server *next; 
@@ -108,7 +102,7 @@ index 9443405..3d21b2b 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index d32d0d8..21c3109 100644
+index 6581a4b..23f1345 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -147,11 +147,38 @@ static unsigned int search_servers(time_t now, struct all_addr **addrpp, unsigne
@@ -232,40 +226,27 @@ index b405458..41fb88e 100644
  	  if (++count > SERVERS_LOGGED)
  	    continue;
 diff --git a/src/option.c b/src/option.c
-index 65df93a..ad4460f 100644
+index 8a9e6fe..dc28483 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2396,20 +2396,46 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
- 	      arg++;
+@@ -2411,6 +2411,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	    while (rebind || (end = split_chr(arg, '/')))
  	      {
--		char *domain = NULL;
--		/* elide leading dots - they are implied in the search algorithm */
--		while (*arg == '.') arg++;
--		/* # matches everything and becomes a zero length domain string */
--		if (strcmp(arg, "#") == 0)
--		  domain = "";
--		else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
--		  option = '?';
-+		char *domain = NULL, *regex = NULL;
+ 		char *domain = NULL;
++		char *regex = NULL;
 +		char *real_end = arg + strlen(arg);
-+
-+		if (*arg == ':' && *(real_end - 1) == ':')
-+		  {
-+		     *(real_end - 1) = '\0';
-+		     regex = arg + 1;
-+		  }
-+		else
-+		  {
-+		    /* elide leading dots - they are implied in the search algorithm */
-+		    while (*arg == '.') arg++;
-+
-+		    /* # matches everything and becomes a zero length domain string */
-+		    if (strcmp(arg, "#") == 0)
-+		      domain = "";
-+		    else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
-+		      option = '?';
-+		  }
++		if (*arg == ':' && *(real_end - 1) == ':'){
++			*(real_end - 1) = '\0';
++			regex = arg + 1;
++		}else{
+ 		/* elide leading dots - they are implied in the search algorithm */
+ 		while (*arg == '.') arg++;
+ 		/* # matches everything and becomes a zero length domain string */
+@@ -2418,12 +2424,27 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 		  domain = "";
+ 		else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
+ 		  ret_err(gen_err);
++		}
  		serv = opt_malloc(sizeof(struct server));
  		memset(serv, 0, sizeof(struct server));
  		serv->next = newlist;
@@ -273,40 +254,28 @@ index 65df93a..ad4460f 100644
  		serv->domain = domain;
 -		serv->flags = domain ? SERV_HAS_DOMAIN : SERV_FOR_NODOTS;
 +		serv->flags = domain || regex ? SERV_HAS_DOMAIN : SERV_FOR_NODOTS;
-+		if (regex)
-+		  {
++		if (regex){
 +#ifdef HAVE_REGEX
-+		    const char *error;
-+		    int erroff;
-+		    serv->regex = pcre_compile(regex, 0, &error, &erroff, NULL);
++			const char *error;
++			int erroff;
++			serv->regex = pcre_compile(regex, 0, &error, &erroff, NULL);
 +
-+		    if (!serv->regex)
-+		      ret_err(error);
-+		    serv->flags |= SERV_IS_REGEX;
-+		    serv->pextra = pcre_study(serv->regex, 0, &error);
++			if (!serv->regex)
++				ret_err(error);
++			serv->flags |= SERV_IS_REGEX;
++			serv->pextra = pcre_study(serv->regex, 0, &error);
 +#else
-+		    ret_err("Using a regex while server was configured without regex support!");
++			ret_err("Using a regex while server was configured without regex support!");
 +#endif
-+		  }
++		}
  		arg = end;
  		if (rebind)
  		  break;
-@@ -2589,8 +2615,8 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
- 	    
- 	    if (size < 0)
- 	      size = 0;
--	    else if (size > 10000)
--	      size = 10000;
-+	    else if (size > 1000000)
-+	      size = 1000000;
- 	    
- 	    daemon->cachesize = size;
- 	  }
 diff --git a/src/rfc1035.c b/src/rfc1035.c
-index b078b59..f65fbdc 100644
+index e179865..a1edc77 100644
 --- a/src/rfc1035.c
 +++ b/src/rfc1035.c
-@@ -1529,6 +1529,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
+@@ -1541,6 +1541,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
  
  		      if ((serv->flags & (SERV_HAS_DOMAIN | SERV_NO_ADDR)) != SERV_HAS_DOMAIN)
  		        continue;
