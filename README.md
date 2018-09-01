@@ -22,8 +22,8 @@ Offical dnsmasq:
 For Debian/Ubuntu:
 
 ```
-# Install libpcre3
-sudo apt install libpcre3-dev
+# Install libpcre3 and pkg-config
+sudo apt install libpcre3-dev pkg-config
 
 # Clone the repo
 git clone https://github.com/lixingcong/dnsmasq-regex
