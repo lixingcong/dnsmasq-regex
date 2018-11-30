@@ -1,6 +1,6 @@
 ## dnsmasq with regex support
 
-Lastest version: 2.80test3
+Lastest version: 2.80
 
 patches:
 - [001-regex-server.patch](/patches/001-regex-server.patch)
@@ -28,16 +28,19 @@ sudo apt install libpcre3-dev pkg-config
 # Clone the repo
 git clone https://github.com/lixingcong/dnsmasq-regex
 cd dnsmasq-regex
+
+# update the sub-module 'dnsmasq' to latest version
+# only update when a newer version is released
 bash ./update_submodule.sh
 
 # build it
-make -j2
+make
 
 # Run the binary
 ./dnsmasq/src/dnsmasq --version
 ```
 
-Tips: If you do not need the patch of ipset, just remove if from directory and build again.
+Tips: If you do not need the patch of ipset, just remove the file "patches/002-regex-ipset.patch" and build from source again.
 
 ## Config file example
 
