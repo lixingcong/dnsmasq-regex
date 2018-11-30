@@ -1,8 +1,8 @@
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 70b0f0d..f1c4c1c 100644
+index 940b212..21938fe 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -550,10 +550,20 @@ struct server {
+@@ -561,10 +561,20 @@ struct server {
  #endif
  };
  
@@ -24,10 +24,10 @@ index 70b0f0d..f1c4c1c 100644
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index 23f1345..227e5d6 100644
+index cb3aeb8..c0a2dd7 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -641,6 +641,19 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -663,6 +663,19 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -47,7 +47,7 @@ index 23f1345..227e5d6 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -650,6 +663,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -672,6 +685,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
@@ -58,10 +58,10 @@ index 23f1345..227e5d6 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index dc28483..29bb438 100644
+index d48088f..b1749a5 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2563,6 +2563,28 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2565,6 +2565,28 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -73,7 +73,7 @@ index dc28483..29bb438 100644
 +			 char *regex = NULL;
 +			 *(real_end - 1) = '\0';
 +			 regex = arg + 1;
-+			 
++
 +			 ipsets->next = opt_malloc(sizeof(struct ipsets));
 +			 ipsets = ipsets->next;
 +			 memset(ipsets, 0, sizeof(struct ipsets));
@@ -90,7 +90,7 @@ index dc28483..29bb438 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2575,6 +2597,10 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2577,6 +2599,10 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
@@ -101,7 +101,7 @@ index dc28483..29bb438 100644
  		 arg = end;
  	       }
  	   } 
-@@ -2583,6 +2609,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2585,6 +2611,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     ipsets->next = opt_malloc(sizeof(struct ipsets));
  	     ipsets = ipsets->next;
  	     memset(ipsets, 0, sizeof(struct ipsets));
