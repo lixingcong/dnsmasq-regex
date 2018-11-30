@@ -27,7 +27,7 @@ index 633f38a..3eabd7f 100644
  #endif
 -"regex "
 +"regex"
-+#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++#if defined(HAVE_IPSET) && defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
 +"(+ipset) "
 +#else
 +" "
