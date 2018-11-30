@@ -1,14 +1,53 @@
+diff --git a/src/config.h b/src/config.h
+index 633f38a..3eabd7f 100644
+--- a/src/config.h
++++ b/src/config.h
+@@ -133,6 +133,10 @@ HAVE_REGEX
+    Define this if you want to link against lib pcre to get regex
+    support in "address=" matches
+ 
++HAVE_REGEX_IPSET
++   Define this if you want to link against lib pcre to get regex
++   support in "ipset=" matches
++
+ NO_ID
+    Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
+ NO_IPV6
+@@ -191,6 +195,7 @@ RESOLVFILE
+ /* #define HAVE_CONNTRACK */
+ /* #define HAVE_DNSSEC */
+ /* #define HAVE_REGEX */
++/* #define HAVE_REGEX_IPSET */
+ 
+ 
+ /* Default locations for important system files. */
+@@ -415,7 +420,12 @@ static char *compile_opts =
+ #ifndef HAVE_REGEX
+ "no-"
+ #endif
+-"regex "
++"regex"
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++"(+ipset) "
++#else
++" "
++#endif
+ #if defined(HAVE_LIBIDN2)
+ "IDN2 "
+ #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 940b212..21938fe 100644
+index 940b212..9036df7 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -561,10 +561,20 @@ struct server {
+@@ -561,10 +561,24 @@ struct server {
  #endif
  };
  
 +#ifdef HAVE_REGEX
-+#define IPSET_IS_DOMAIN 0x01
-+#define IPSET_IS_REGEX 0x02
++#ifdef HAVE_REGEX_IPSET
++	#define IPSET_IS_DOMAIN 0x01
++	#define IPSET_IS_REGEX 0x02
++#endif
 +#endif
 +
  struct ipsets {
@@ -16,22 +55,25 @@ index 940b212..21938fe 100644
    char *domain;
    struct ipsets *next;
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +  pcre *regex;
 +  pcre_extra *pextra;
 +  unsigned char domain_type;
++#endif
 +#endif
  };
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index cb3aeb8..c0a2dd7 100644
+index cb3aeb8..ad436e4 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -663,6 +663,19 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -663,6 +663,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +	  if (ipset_pos->domain_type & IPSET_IS_REGEX){
 +		  int captcount = 0;
 +		  if (pcre_fullinfo(ipset_pos->regex, ipset_pos->pextra, PCRE_INFO_CAPTURECOUNT, &captcount) == 0)
@@ -44,30 +86,34 @@ index cb3aeb8..c0a2dd7 100644
 +		  }
 +	  }else{
 +#endif
++#endif
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -672,6 +685,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -672,6 +687,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +	  }
++#endif
 +#endif
  	}
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index d48088f..b1749a5 100644
+index d48088f..62287da 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2565,6 +2565,28 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2565,6 +2565,30 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
 +		 char *real_end = arg + strlen(arg);
 +		 if (*arg == ':' && *(real_end - 1) == ':'){
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +			 const char *error;
 +			 int erroff;
 +			 char *regex = NULL;
@@ -83,6 +129,7 @@ index d48088f..b1749a5 100644
 +				 ret_err(error);
 +			 ipsets->pextra = pcre_study(ipsets->regex, 0, &error);
 +			 ipsets->domain_type = IPSET_IS_REGEX;
++#endif
 +#else
 +			 ret_err("Using a regex while server was configured without regex support!");
 +#endif
@@ -90,23 +137,27 @@ index d48088f..b1749a5 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2577,6 +2599,10 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2577,6 +2601,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +		 ipsets->domain_type = IPSET_IS_DOMAIN;
++#endif
 +#endif
 +		 }
  		 arg = end;
  	       }
  	   } 
-@@ -2585,6 +2611,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2585,6 +2615,11 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     ipsets->next = opt_malloc(sizeof(struct ipsets));
  	     ipsets = ipsets->next;
  	     memset(ipsets, 0, sizeof(struct ipsets));
 +#ifdef HAVE_REGEX
++#ifdef HAVE_REGEX_IPSET
 +	     ipsets->domain_type = IPSET_IS_DOMAIN;
++#endif
 +#endif
  	     ipsets->domain = "";
  	   }

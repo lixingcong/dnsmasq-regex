@@ -34,7 +34,7 @@ index e71cf86..fd43bac 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 762c49b..d2a07e4 100644
+index 762c49b..633f38a 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -129,6 +129,10 @@ HAVE_LOOP
@@ -52,7 +52,7 @@ index 762c49b..d2a07e4 100644
  /* #define HAVE_LIBIDN2 */
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_DNSSEC */
-+#define HAVE_REGEX
++/* #define HAVE_REGEX */
  
  
  /* Default locations for important system files. */

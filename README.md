@@ -36,11 +36,23 @@ bash ./update_submodule.sh
 # build it
 make
 
-# Run the binary
+# Run the binary, check if the compile option contains "regex(+ipset)"
 ./dnsmasq/src/dnsmasq --version
 ```
 
-Tips: If you do not need the patch of ipset, just remove the file "patches/002-regex-ipset.patch" and build from source again.
+*Tips:* If you do not need the patch of regex_ipset, just edit the file "Makefile" and build from source again.
+
+Change this line
+
+```
+DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET"
+```
+
+to
+
+```
+DNSMASQ_COPTS="-DHAVE_REGEX"
+```
 
 ## Config file example
 

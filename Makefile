@@ -4,10 +4,13 @@ PATCH_DIR  := patches
 PATCHES    := $(wildcard $(PATCH_DIR)/*.patch)
 PATCHED    := $(patsubst $(PATCH_DIR)/%.patch, $(PATCH_DIR)/%.patched, $(PATCHES))
 
+# turn on/off for regex or regex_ipset
+DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET"
+
 all:$(BIN)
 
 $(BIN):$(PATCHED)
-	cd dnsmasq && $(MAKE)
+	cd dnsmasq && $(MAKE) COPTS=$(DNSMASQ_COPTS)
 	$(MAKE) remove_patched
 	$(MAKE) reset_submodule
 
