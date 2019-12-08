@@ -102,7 +102,7 @@ index f53e9a5..940b212 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index 3dd8633..cb3aeb8 100644
+index 3dd8633..d328b77 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -155,11 +155,38 @@ static unsigned int search_servers(time_t now, struct all_addr **addrpp, unsigne
@@ -212,6 +212,15 @@ index 3dd8633..cb3aeb8 100644
  	      !(start->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
  	    {
  	      int fd;
+@@ -2016,7 +2074,7 @@ unsigned char *tcp_request(int confd, time_t now,
+ 		      
+ 		      /* server for wrong domain */
+ 		      if (type != (last_server->flags & SERV_TYPE) ||
+-			  (type == SERV_HAS_DOMAIN && !hostname_isequal(domain, last_server->domain)) ||
++			  (type == SERV_HAS_DOMAIN && !match_domain_for_forward(domain, last_server)) ||
+ 			  (last_server->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
+ 			continue;
+ 
 diff --git a/src/network.c b/src/network.c
 index 8ae7a70..2e9e7b7 100644
 --- a/src/network.c
