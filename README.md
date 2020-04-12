@@ -1,6 +1,6 @@
-## dnsmasq with regex support
+## Dnsmasq with regex support
 
-Lastest version: 2.80
+Lastest version: 2.81
 
 patches:
 - [001-regex-server.patch](/patches/001-regex-server.patch)
@@ -60,6 +60,6 @@ DNSMASQ_COPTS="-DHAVE_REGEX"
 
 Tips: A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
 
-## Openwrt/LEDE package
+## OpenWrt/LEDE package
 
 Please check this page: [dnsmasq-regex-openwrt](https://github.com/lixingcong/dnsmasq-regex-openwrt)

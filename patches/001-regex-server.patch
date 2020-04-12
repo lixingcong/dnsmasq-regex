@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index e71cf86..fd43bac 100644
+index 78e25f0..31b2c0f 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -65,6 +65,8 @@ lua_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_LUASCRIPT $(PKG_CON
@@ -27,17 +27,17 @@ index e71cf86..fd43bac 100644
   top="$(top)" \
   i18n=-DLOCALEDIR=\'\"$(LOCALEDIR)\"\' \
 - build_cflags="$(version) $(dbus_cflags) $(idn2_cflags) $(idn_cflags) $(ct_cflags) $(lua_cflags) $(nettle_cflags)" \
-- build_libs="$(dbus_libs) $(idn2_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs)"  \
+- build_libs="$(dbus_libs) $(idn2_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs) $(ubus_libs)"  \
 + build_cflags="$(version) $(dbus_cflags) $(idn2_cflags) $(idn_cflags) $(ct_cflags) $(lua_cflags) $(nettle_cflags) $(regex_cflags)" \
-+ build_libs="$(dbus_libs) $(idn2_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs) $(regex_libs)" \
++ build_libs="$(dbus_libs) $(idn2_libs) $(idn_libs) $(ct_libs) $(lua_libs) $(sunos_libs) $(nettle_libs) $(gmp_libs) $(ubus_libs) $(regex_libs)"  \
   -f $(top)/Makefile dnsmasq
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 762c49b..633f38a 100644
+index 7d08f7d..2f156eb 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -129,6 +129,10 @@ HAVE_LOOP
+@@ -130,6 +130,10 @@ HAVE_LOOP
  HAVE_INOTIFY
     use the Linux inotify facility to efficiently re-read configuration files.
  
@@ -47,7 +47,7 @@ index 762c49b..633f38a 100644
 +
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
- NO_IPV6
+ NO_TFTP
 @@ -186,6 +190,7 @@ RESOLVFILE
  /* #define HAVE_LIBIDN2 */
  /* #define HAVE_CONNTRACK */
@@ -56,7 +56,7 @@ index 762c49b..633f38a 100644
  
  
  /* Default locations for important system files. */
-@@ -407,6 +412,10 @@ static char *compile_opts =
+@@ -376,6 +381,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -68,10 +68,10 @@ index 762c49b..633f38a 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index f53e9a5..940b212 100644
+index 68e6287..cafd250 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -152,6 +152,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
+@@ -157,6 +157,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
  #include <priv.h>
  #endif
  
@@ -82,7 +82,7 @@ index f53e9a5..940b212 100644
  #ifdef HAVE_DNSSEC
  #  include <nettle/nettle-meta.h>
  #endif
-@@ -524,6 +528,7 @@ union mysockaddr {
+@@ -529,6 +533,7 @@ union mysockaddr {
  #define SERV_LOOP           8192  /* server causes forwarding loop */
  #define SERV_DO_DNSSEC     16384  /* Validate DNSSEC when using this server */
  #define SERV_GOT_TCP       32768  /* Got some data from the TCP connection */
@@ -90,7 +90,7 @@ index f53e9a5..940b212 100644
  
  struct serverfd {
    int fd;
-@@ -550,6 +555,10 @@ struct server {
+@@ -555,6 +560,10 @@ struct server {
    u32 uid;
  #endif
    struct server *next; 
@@ -102,10 +102,10 @@ index f53e9a5..940b212 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index 3dd8633..d328b77 100644
+index fde554d..f903e5b 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -155,11 +155,38 @@ static unsigned int search_servers(time_t now, struct all_addr **addrpp, unsigne
+@@ -155,11 +155,38 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
        }
      else if (serv->flags & SERV_HAS_DOMAIN)
        {
@@ -149,7 +149,7 @@ index 3dd8633..d328b77 100644
  	  {
  	    if ((serv->flags & SERV_NO_REBIND) && norebind)	
  	      *norebind = 1;
-@@ -186,6 +213,11 @@ static unsigned int search_servers(time_t now, struct all_addr **addrpp, unsigne
+@@ -186,6 +213,11 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
  		if (domainlen >= matchlen)
  		  {
  		    *type = serv->flags & (SERV_HAS_DOMAIN | SERV_USE_RESOLV | SERV_NO_REBIND | SERV_DO_DNSSEC);
@@ -161,7 +161,7 @@ index 3dd8633..d328b77 100644
  		    *domain = serv->domain;
  		    matchlen = domainlen;
  		    if (serv->flags & SERV_NO_ADDR)
-@@ -250,6 +282,27 @@ static unsigned int search_servers(time_t now, struct all_addr **addrpp, unsigne
+@@ -246,6 +278,27 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
    return  flags;
  }
  
@@ -187,9 +187,9 @@ index 3dd8633..d328b77 100644
 +}
 +
  static int forward_query(int udpfd, union mysockaddr *udpaddr,
- 			 struct all_addr *dst_addr, unsigned int dst_iface,
+ 			 union all_addr *dst_addr, unsigned int dst_iface,
  			 struct dns_header *header, size_t plen, time_t now, 
-@@ -328,7 +381,12 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -321,7 +374,12 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  #endif
  
        /* retry on existing query, send to all available servers  */
@@ -203,7 +203,7 @@ index 3dd8633..d328b77 100644
        forward->sentto->failed_queries++;
        if (!option_bool(OPT_ORDER))
  	{
-@@ -465,7 +523,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -458,7 +516,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	     must be NULL also. */
  	  
  	  if (type == (start->flags & SERV_TYPE) &&
@@ -212,7 +212,7 @@ index 3dd8633..d328b77 100644
  	      !(start->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
  	    {
  	      int fd;
-@@ -2016,7 +2074,7 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -1998,7 +2056,7 @@ unsigned char *tcp_request(int confd, time_t now,
  		      
  		      /* server for wrong domain */
  		      if (type != (last_server->flags & SERV_TYPE) ||
@@ -222,10 +222,10 @@ index 3dd8633..d328b77 100644
  			continue;
  
 diff --git a/src/network.c b/src/network.c
-index 8ae7a70..2e9e7b7 100644
+index 4bada37..dcca1be 100644
 --- a/src/network.c
 +++ b/src/network.c
-@@ -1553,7 +1553,7 @@ void check_servers(void)
+@@ -1520,7 +1520,7 @@ void check_servers(void)
  	    serv->sfd->used = 1;
  	}
        
@@ -235,10 +235,10 @@ index 8ae7a70..2e9e7b7 100644
  	  if (++count > SERVERS_LOGGED)
  	    continue;
 diff --git a/src/option.c b/src/option.c
-index 44b1dc5..d48088f 100644
+index 1f698da..a039b40 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2417,6 +2417,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2559,6 +2559,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	    while (rebind || (end = split_chr(arg, '/')))
  	      {
  		char *domain = NULL;
@@ -251,7 +251,7 @@ index 44b1dc5..d48088f 100644
  		/* elide leading dots - they are implied in the search algorithm */
  		while (*arg == '.') arg++;
  		/* # matches everything and becomes a zero length domain string */
-@@ -2424,12 +2430,27 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2566,12 +2572,27 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		  domain = "";
  		else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
  		  ret_err(gen_err);
@@ -281,10 +281,10 @@ index 44b1dc5..d48088f 100644
  		if (rebind)
  		  break;
 diff --git a/src/rfc1035.c b/src/rfc1035.c
-index 6290f22..a25ece1 100644
+index fefe63d..331ad89 100644
 --- a/src/rfc1035.c
 +++ b/src/rfc1035.c
-@@ -1538,6 +1538,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
+@@ -1629,6 +1629,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
  
  		      if ((serv->flags & (SERV_HAS_DOMAIN | SERV_NO_ADDR)) != SERV_HAS_DOMAIN)
  		        continue;
@@ -294,10 +294,10 @@ index 6290f22..a25ece1 100644
  		      domainlen = strlen(serv->domain);
  		      if (domainlen == 0 || domainlen > namelen)
 diff --git a/src/util.c b/src/util.c
-index a947008..2e527b9 100644
+index 5f13027..1a5c04e 100644
 --- a/src/util.c
 +++ b/src/util.c
-@@ -350,6 +350,8 @@ int hostname_isequal(const char *a, const char *b)
+@@ -351,6 +351,8 @@ int hostname_isequal(const char *a, const char *b)
  {
    unsigned int c1, c2;
    
