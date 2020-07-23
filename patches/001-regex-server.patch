@@ -34,10 +34,10 @@ index 78e25f0..31b2c0f 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 7d08f7d..2f156eb 100644
+index 7187ffa..680c6ae 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -130,6 +130,10 @@ HAVE_LOOP
+@@ -132,6 +132,10 @@ HAVE_LOOP
  HAVE_INOTIFY
     use the Linux inotify facility to efficiently re-read configuration files.
  
@@ -48,7 +48,7 @@ index 7d08f7d..2f156eb 100644
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_TFTP
-@@ -186,6 +190,7 @@ RESOLVFILE
+@@ -188,6 +192,7 @@ RESOLVFILE
  /* #define HAVE_LIBIDN2 */
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_DNSSEC */
@@ -56,7 +56,7 @@ index 7d08f7d..2f156eb 100644
  
  
  /* Default locations for important system files. */
-@@ -376,6 +381,10 @@ static char *compile_opts =
+@@ -378,6 +383,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -68,7 +68,7 @@ index 7d08f7d..2f156eb 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 68e6287..cafd250 100644
+index 4220798..7c4bf99 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -157,6 +157,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -102,7 +102,7 @@ index 68e6287..cafd250 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index fde554d..f903e5b 100644
+index 9c2b2c6..d420dda 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -155,11 +155,38 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
@@ -212,7 +212,7 @@ index fde554d..f903e5b 100644
  	      !(start->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
  	    {
  	      int fd;
-@@ -1998,7 +2056,7 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -1999,7 +2057,7 @@ unsigned char *tcp_request(int confd, time_t now,
  		      
  		      /* server for wrong domain */
  		      if (type != (last_server->flags & SERV_TYPE) ||
@@ -222,10 +222,10 @@ index fde554d..f903e5b 100644
  			continue;
  
 diff --git a/src/network.c b/src/network.c
-index 4bada37..dcca1be 100644
+index c7d002b..25024ee 100644
 --- a/src/network.c
 +++ b/src/network.c
-@@ -1520,7 +1520,7 @@ void check_servers(void)
+@@ -1624,7 +1624,7 @@ void check_servers(void)
  	    serv->sfd->used = 1;
  	}
        
@@ -235,7 +235,7 @@ index 4bada37..dcca1be 100644
  	  if (++count > SERVERS_LOGGED)
  	    continue;
 diff --git a/src/option.c b/src/option.c
-index 1f698da..a039b40 100644
+index dbe5f90..0e09c41 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2559,6 +2559,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma

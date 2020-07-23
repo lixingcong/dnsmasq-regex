@@ -1,8 +1,8 @@
 diff --git a/src/config.h b/src/config.h
-index 2f156eb..5799175 100644
+index 680c6ae..8955bf3 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -134,6 +134,10 @@ HAVE_REGEX
+@@ -136,6 +136,10 @@ HAVE_REGEX
     Define this if you want to link against lib pcre to get regex
     support in "address=" matches
  
@@ -13,7 +13,7 @@ index 2f156eb..5799175 100644
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_TFTP
-@@ -191,6 +195,7 @@ RESOLVFILE
+@@ -193,6 +197,7 @@ RESOLVFILE
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_REGEX */
@@ -21,7 +21,7 @@ index 2f156eb..5799175 100644
  
  
  /* Default locations for important system files. */
-@@ -384,7 +389,12 @@ static char *compile_opts =
+@@ -386,7 +391,12 @@ static char *compile_opts =
  #ifndef HAVE_REGEX
  "no-"
  #endif
@@ -36,7 +36,7 @@ index 2f156eb..5799175 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index cafd250..d55e8ff 100644
+index 7c4bf99..67f33c3 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -566,10 +566,24 @@ struct server {
@@ -65,7 +65,7 @@ index cafd250..d55e8ff 100644
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index f903e5b..06ae9c6 100644
+index d420dda..1025764 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -652,6 +652,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
@@ -103,7 +103,7 @@ index f903e5b..06ae9c6 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index a039b40..f28f5ff 100644
+index 0e09c41..bc5e1bb 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2714,6 +2714,30 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
