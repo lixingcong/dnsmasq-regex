@@ -1,8 +1,8 @@
 diff --git a/src/config.h b/src/config.h
-index 680c6ae..8955bf3 100644
+index df0970f..8fe9857 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -136,6 +136,10 @@ HAVE_REGEX
+@@ -139,6 +139,10 @@ HAVE_REGEX
     Define this if you want to link against lib pcre to get regex
     support in "address=" matches
  
@@ -13,15 +13,15 @@ index 680c6ae..8955bf3 100644
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_TFTP
-@@ -193,6 +197,7 @@ RESOLVFILE
- /* #define HAVE_CONNTRACK */
+@@ -197,6 +201,7 @@ RESOLVFILE
+ /* #define HAVE_NETTLEHASH */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_REGEX */
 +/* #define HAVE_REGEX_IPSET */
  
  
  /* Default locations for important system files. */
-@@ -386,7 +391,12 @@ static char *compile_opts =
+@@ -390,7 +395,12 @@ static char *compile_opts =
  #ifndef HAVE_REGEX
  "no-"
  #endif
@@ -36,7 +36,7 @@ index 680c6ae..8955bf3 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 7c4bf99..67f33c3 100644
+index 0cdaa0b..62ca753 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -566,10 +566,24 @@ struct server {
@@ -65,10 +65,10 @@ index 7c4bf99..67f33c3 100644
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index d420dda..1025764 100644
+index 2eaa311..af77e69 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -652,6 +652,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -700,6 +700,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -90,7 +90,7 @@ index d420dda..1025764 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -661,6 +676,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -709,6 +724,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
@@ -103,10 +103,10 @@ index d420dda..1025764 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index 0e09c41..bc5e1bb 100644
+index ec31210..f2ae18f 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2714,6 +2714,30 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2717,6 +2717,30 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -137,7 +137,7 @@ index 0e09c41..bc5e1bb 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2726,6 +2750,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2729,6 +2753,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
@@ -150,7 +150,7 @@ index 0e09c41..bc5e1bb 100644
  		 arg = end;
  	       }
  	   } 
-@@ -2734,6 +2764,11 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2737,6 +2767,11 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     ipsets->next = opt_malloc(sizeof(struct ipsets));
  	     ipsets = ipsets->next;
  	     memset(ipsets, 0, sizeof(struct ipsets));

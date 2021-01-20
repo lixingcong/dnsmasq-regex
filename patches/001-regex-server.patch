@@ -1,17 +1,17 @@
 diff --git a/Makefile b/Makefile
-index 78e25f0..31b2c0f 100644
+index 7d2afd1..f32a347 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -65,6 +65,8 @@ lua_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_LUASCRIPT $(PKG_CON
- nettle_cflags = `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC $(PKG_CONFIG) --cflags nettle hogweed`
- nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC $(PKG_CONFIG) --libs nettle hogweed`
+@@ -67,6 +67,8 @@ nettle_cflags = `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
+ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CONFIG) --libs 'nettle hogweed' \
+                                                         HAVE_NETTLEHASH $(PKG_CONFIG) --libs nettle`
  gmp_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC NO_GMP --copy -lgmp`
 +regex_cflags =  `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_REGEX $(PKG_CONFIG) --cflags libpcre`
 +regex_libs =    `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_REGEX $(PKG_CONFIG) --libs libpcre`
  sunos_libs =    `if uname | grep SunOS >/dev/null 2>&1; then echo -lsocket -lnsl -lposix4; fi`
  version =     -DVERSION='\"`$(top)/bld/get-version $(top)`\"'
  
-@@ -85,8 +87,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
+@@ -88,8 +90,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
  all : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
@@ -22,7 +22,7 @@ index 78e25f0..31b2c0f 100644
   -f $(top)/Makefile dnsmasq 
  
  mostly_clean :
-@@ -110,8 +112,8 @@ all-i18n : $(BUILDDIR)
+@@ -113,8 +115,8 @@ all-i18n : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
   i18n=-DLOCALEDIR=\'\"$(LOCALEDIR)\"\' \
@@ -34,10 +34,10 @@ index 78e25f0..31b2c0f 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 7187ffa..680c6ae 100644
+index e71a117..df0970f 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -132,6 +132,10 @@ HAVE_LOOP
+@@ -135,6 +135,10 @@ HAVE_LOOP
  HAVE_INOTIFY
     use the Linux inotify facility to efficiently re-read configuration files.
  
@@ -48,15 +48,15 @@ index 7187ffa..680c6ae 100644
  NO_ID
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_TFTP
-@@ -188,6 +192,7 @@ RESOLVFILE
- /* #define HAVE_LIBIDN2 */
+@@ -192,6 +196,7 @@ RESOLVFILE
  /* #define HAVE_CONNTRACK */
+ /* #define HAVE_NETTLEHASH */
  /* #define HAVE_DNSSEC */
 +/* #define HAVE_REGEX */
  
  
  /* Default locations for important system files. */
-@@ -378,6 +383,10 @@ static char *compile_opts =
+@@ -382,6 +387,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -68,7 +68,7 @@ index 7187ffa..680c6ae 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 4220798..7c4bf99 100644
+index 914f469..0cdaa0b 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -157,6 +157,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -79,7 +79,7 @@ index 4220798..7c4bf99 100644
 +#include <pcre.h>
 +#endif
 +
- #ifdef HAVE_DNSSEC
+ #if defined(HAVE_DNSSEC) || defined(HAVE_NETTLEHASH)
  #  include <nettle/nettle-meta.h>
  #endif
 @@ -529,6 +533,7 @@ union mysockaddr {
@@ -102,10 +102,10 @@ index 4220798..7c4bf99 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index 9c2b2c6..d420dda 100644
+index 7a95ddf..2eaa311 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -155,11 +155,38 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
+@@ -157,11 +157,38 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
        }
      else if (serv->flags & SERV_HAS_DOMAIN)
        {
@@ -149,7 +149,7 @@ index 9c2b2c6..d420dda 100644
  	  {
  	    if ((serv->flags & SERV_NO_REBIND) && norebind)	
  	      *norebind = 1;
-@@ -186,6 +213,11 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
+@@ -188,6 +215,11 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
  		if (domainlen >= matchlen)
  		  {
  		    *type = serv->flags & (SERV_HAS_DOMAIN | SERV_USE_RESOLV | SERV_NO_REBIND | SERV_DO_DNSSEC);
@@ -161,7 +161,7 @@ index 9c2b2c6..d420dda 100644
  		    *domain = serv->domain;
  		    matchlen = domainlen;
  		    if (serv->flags & SERV_NO_ADDR)
-@@ -246,6 +278,27 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
+@@ -248,6 +280,27 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
    return  flags;
  }
  
@@ -189,7 +189,7 @@ index 9c2b2c6..d420dda 100644
  static int forward_query(int udpfd, union mysockaddr *udpaddr,
  			 union all_addr *dst_addr, unsigned int dst_iface,
  			 struct dns_header *header, size_t plen, time_t now, 
-@@ -321,7 +374,12 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -332,7 +385,12 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  #endif
  
        /* retry on existing query, send to all available servers  */
@@ -203,7 +203,7 @@ index 9c2b2c6..d420dda 100644
        forward->sentto->failed_queries++;
        if (!option_bool(OPT_ORDER))
  	{
-@@ -458,7 +516,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -506,7 +564,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	     must be NULL also. */
  	  
  	  if (type == (start->flags & SERV_TYPE) &&
@@ -212,7 +212,7 @@ index 9c2b2c6..d420dda 100644
  	      !(start->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
  	    {
  	      int fd;
-@@ -1999,7 +2057,7 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2056,7 +2114,7 @@ unsigned char *tcp_request(int confd, time_t now,
  		      
  		      /* server for wrong domain */
  		      if (type != (last_server->flags & SERV_TYPE) ||
@@ -222,10 +222,10 @@ index 9c2b2c6..d420dda 100644
  			continue;
  
 diff --git a/src/network.c b/src/network.c
-index c7d002b..25024ee 100644
+index 7cf2546..631aae8 100644
 --- a/src/network.c
 +++ b/src/network.c
-@@ -1624,7 +1624,7 @@ void check_servers(void)
+@@ -1653,7 +1653,7 @@ void check_servers(void)
  	    serv->sfd->used = 1;
  	}
        
@@ -235,10 +235,10 @@ index c7d002b..25024ee 100644
  	  if (++count > SERVERS_LOGGED)
  	    continue;
 diff --git a/src/option.c b/src/option.c
-index dbe5f90..0e09c41 100644
+index 316d9c8..ec31210 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2559,6 +2559,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2562,6 +2562,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	    while (rebind || (end = split_chr(arg, '/')))
  	      {
  		char *domain = NULL;
@@ -251,7 +251,7 @@ index dbe5f90..0e09c41 100644
  		/* elide leading dots - they are implied in the search algorithm */
  		while (*arg == '.') arg++;
  		/* # matches everything and becomes a zero length domain string */
-@@ -2566,12 +2572,27 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2569,12 +2575,27 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		  domain = "";
  		else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
  		  ret_err(gen_err);
@@ -281,10 +281,10 @@ index dbe5f90..0e09c41 100644
  		if (rebind)
  		  break;
 diff --git a/src/rfc1035.c b/src/rfc1035.c
-index fefe63d..331ad89 100644
+index 79af53f..c379101 100644
 --- a/src/rfc1035.c
 +++ b/src/rfc1035.c
-@@ -1629,6 +1629,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
+@@ -1582,6 +1582,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
  
  		      if ((serv->flags & (SERV_HAS_DOMAIN | SERV_NO_ADDR)) != SERV_HAS_DOMAIN)
  		        continue;

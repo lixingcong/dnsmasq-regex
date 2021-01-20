@@ -1,6 +1,6 @@
 ## Dnsmasq with regex support
 
-Lastest version: 2.82
+Lastest version: 2.83
 
 patches:
 - [001-regex-server.patch](/patches/001-regex-server.patch)
