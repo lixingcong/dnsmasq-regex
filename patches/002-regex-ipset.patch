@@ -1,5 +1,5 @@
 diff --git a/src/config.h b/src/config.h
-index df0970f..8fe9857 100644
+index 6790062..740e513 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -139,6 +139,10 @@ HAVE_REGEX
@@ -14,7 +14,7 @@ index df0970f..8fe9857 100644
     Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
  NO_TFTP
 @@ -197,6 +201,7 @@ RESOLVFILE
- /* #define HAVE_NETTLEHASH */
+ /* #define HAVE_CRYPTOHASH */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_REGEX */
 +/* #define HAVE_REGEX_IPSET */
@@ -36,10 +36,10 @@ index df0970f..8fe9857 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 0cdaa0b..62ca753 100644
+index e308399..c793e8b 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -566,10 +566,24 @@ struct server {
+@@ -570,10 +570,24 @@ struct server {
  #endif
  };
  
@@ -65,10 +65,10 @@ index 0cdaa0b..62ca753 100644
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index 2eaa311..af77e69 100644
+index a60ad5b..8e7ba7c 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -700,6 +700,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -701,6 +701,21 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -90,7 +90,7 @@ index 2eaa311..af77e69 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -709,6 +724,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -710,6 +725,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
@@ -103,7 +103,7 @@ index 2eaa311..af77e69 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index ec31210..f2ae18f 100644
+index a286ccf..9774df8 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2717,6 +2717,30 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma

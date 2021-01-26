@@ -1,9 +1,9 @@
 diff --git a/Makefile b/Makefile
-index 7d2afd1..f32a347 100644
+index e4c3f5c..049a22a 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -67,6 +67,8 @@ nettle_cflags = `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
- nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CONFIG) --libs 'nettle hogweed' \
+@@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
+                                                         HAVE_CRYPTOHASH $(PKG_CONFIG) --libs nettle \
                                                          HAVE_NETTLEHASH $(PKG_CONFIG) --libs nettle`
  gmp_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC NO_GMP --copy -lgmp`
 +regex_cflags =  `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_REGEX $(PKG_CONFIG) --cflags libpcre`
@@ -11,7 +11,7 @@ index 7d2afd1..f32a347 100644
  sunos_libs =    `if uname | grep SunOS >/dev/null 2>&1; then echo -lsocket -lnsl -lposix4; fi`
  version =     -DVERSION='\"`$(top)/bld/get-version $(top)`\"'
  
-@@ -88,8 +90,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
+@@ -90,8 +92,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
  all : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
@@ -22,7 +22,7 @@ index 7d2afd1..f32a347 100644
   -f $(top)/Makefile dnsmasq 
  
  mostly_clean :
-@@ -113,8 +115,8 @@ all-i18n : $(BUILDDIR)
+@@ -115,8 +117,8 @@ all-i18n : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
   i18n=-DLOCALEDIR=\'\"$(LOCALEDIR)\"\' \
@@ -34,7 +34,7 @@ index 7d2afd1..f32a347 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index e71a117..df0970f 100644
+index 9f69ce3..6790062 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -135,6 +135,10 @@ HAVE_LOOP
@@ -50,7 +50,7 @@ index e71a117..df0970f 100644
  NO_TFTP
 @@ -192,6 +196,7 @@ RESOLVFILE
  /* #define HAVE_CONNTRACK */
- /* #define HAVE_NETTLEHASH */
+ /* #define HAVE_CRYPTOHASH */
  /* #define HAVE_DNSSEC */
 +/* #define HAVE_REGEX */
  
@@ -68,7 +68,7 @@ index e71a117..df0970f 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 914f469..0cdaa0b 100644
+index e770454..e308399 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -157,6 +157,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -79,10 +79,10 @@ index 914f469..0cdaa0b 100644
 +#include <pcre.h>
 +#endif
 +
- #if defined(HAVE_DNSSEC) || defined(HAVE_NETTLEHASH)
- #  include <nettle/nettle-meta.h>
- #endif
-@@ -529,6 +533,7 @@ union mysockaddr {
+ /* Backwards compat with 2.83 */
+ #if defined(HAVE_NETTLEHASH)
+ #  define HAVE_CRYPTOHASH
+@@ -533,6 +537,7 @@ union mysockaddr {
  #define SERV_LOOP           8192  /* server causes forwarding loop */
  #define SERV_DO_DNSSEC     16384  /* Validate DNSSEC when using this server */
  #define SERV_GOT_TCP       32768  /* Got some data from the TCP connection */
@@ -90,7 +90,7 @@ index 914f469..0cdaa0b 100644
  
  struct serverfd {
    int fd;
-@@ -555,6 +560,10 @@ struct server {
+@@ -559,6 +564,10 @@ struct server {
    u32 uid;
  #endif
    struct server *next; 
@@ -102,7 +102,7 @@ index 914f469..0cdaa0b 100644
  
  struct ipsets {
 diff --git a/src/forward.c b/src/forward.c
-index 7a95ddf..2eaa311 100644
+index 8fb0327..a60ad5b 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -157,11 +157,38 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
@@ -203,7 +203,7 @@ index 7a95ddf..2eaa311 100644
        forward->sentto->failed_queries++;
        if (!option_bool(OPT_ORDER))
  	{
-@@ -506,7 +564,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -507,7 +565,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	     must be NULL also. */
  	  
  	  if (type == (start->flags & SERV_TYPE) &&
@@ -212,7 +212,7 @@ index 7a95ddf..2eaa311 100644
  	      !(start->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)))
  	    {
  	      int fd;
-@@ -2056,7 +2114,7 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2057,7 +2115,7 @@ unsigned char *tcp_request(int confd, time_t now,
  		      
  		      /* server for wrong domain */
  		      if (type != (last_server->flags & SERV_TYPE) ||
@@ -222,7 +222,7 @@ index 7a95ddf..2eaa311 100644
  			continue;
  
 diff --git a/src/network.c b/src/network.c
-index 7cf2546..631aae8 100644
+index 6cf15a9..951466f 100644
 --- a/src/network.c
 +++ b/src/network.c
 @@ -1653,7 +1653,7 @@ void check_servers(void)
@@ -235,7 +235,7 @@ index 7cf2546..631aae8 100644
  	  if (++count > SERVERS_LOGGED)
  	    continue;
 diff --git a/src/option.c b/src/option.c
-index 316d9c8..ec31210 100644
+index 0a72406..a286ccf 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2562,6 +2562,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
@@ -281,7 +281,7 @@ index 316d9c8..ec31210 100644
  		if (rebind)
  		  break;
 diff --git a/src/rfc1035.c b/src/rfc1035.c
-index 79af53f..c379101 100644
+index ea438c2..e5282f0 100644
 --- a/src/rfc1035.c
 +++ b/src/rfc1035.c
 @@ -1582,6 +1582,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
@@ -294,7 +294,7 @@ index 79af53f..c379101 100644
  		      domainlen = strlen(serv->domain);
  		      if (domainlen == 0 || domainlen > namelen)
 diff --git a/src/util.c b/src/util.c
-index 5f13027..1a5c04e 100644
+index 972c60b..757522e 100644
 --- a/src/util.c
 +++ b/src/util.c
 @@ -351,6 +351,8 @@ int hostname_isequal(const char *a, const char *b)
