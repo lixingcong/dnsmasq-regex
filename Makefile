@@ -1,8 +1,8 @@
 BIN := dnsmasq/src/dnsmasq
 
 PATCH_DIR  := patches
-PATCHES    := $(wildcard $(PATCH_DIR)/*.patch)
-PATCHED    := $(patsubst $(PATCH_DIR)/%.patch, $(PATCH_DIR)/%.patched, $(PATCHES))
+PATCHES    := $(sort $(wildcard $(PATCH_DIR)/*.patch))
+PATCHED    := $(sort $(patsubst $(PATCH_DIR)/%.patch, $(PATCH_DIR)/%.patched, $(PATCHES)))
 
 # turn on/off for regex or regex_ipset
 DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET"
@@ -18,7 +18,9 @@ $(BIN):$(PATCHED)
 # for preventing from producing out of order chunks
 .NOTPARALLEL: %.patched
 %.patched:%.patch
-	patch -p 1 -d dnsmasq < $^ && touch $@
+	@echo "Applying $^"
+	@patch -p 1 -d dnsmasq < $^ && touch $@
+	@echo
 
 .PHONY: reset_submodule
 reset_submodule:
