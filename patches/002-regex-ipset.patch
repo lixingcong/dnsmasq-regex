@@ -1,19 +1,14 @@
+commit bc95d8e59b355d252d13df120406355160bf29f8
+Author: lixingcong <lixingcong@live.com>
+Date:   Sat Jun 12 11:47:26 2021 +0800
+
+    002-ipset-patch
+
 diff --git a/src/config.h b/src/config.h
-index bb13db4..de39ffe 100644
+index 480a5aa..42eca18 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -138,6 +138,10 @@ HAVE_REGEX
-    Define this if you want to link against lib pcre to get regex
-    support in "address=" and "server=" matches
- 
-+HAVE_REGEX_IPSET
-+   Define this if you want to link against lib pcre to get regex
-+   support in "ipset=" matches
-+
- NO_ID
-    Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
- NO_TFTP
-@@ -196,6 +200,7 @@ RESOLVFILE
+@@ -193,6 +193,7 @@ RESOLVFILE
  /* #define HAVE_CRYPTOHASH */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_REGEX */
@@ -21,7 +16,7 @@ index bb13db4..de39ffe 100644
  
  
  /* Default locations for important system files. */
-@@ -389,7 +394,12 @@ static char *compile_opts =
+@@ -386,7 +387,12 @@ static char *compile_opts =
  #ifndef HAVE_REGEX
  "no-"
  #endif
@@ -36,115 +31,89 @@ index bb13db4..de39ffe 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index d93f05c..62a662a 100644
+index f8596ab..665a7ab 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -583,10 +583,24 @@ struct server {
- #endif
+@@ -629,10 +629,20 @@ struct serv_local {
+   int arrayposn;
  };
  
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+	#define IPSET_IS_DOMAIN 0x01
-+	#define IPSET_IS_REGEX 0x02
-+#endif
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++  #define IPSET_IS_DOMAIN 0x01
++  #define IPSET_IS_REGEX 0x02
 +#endif
 +
  struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
 +  pcre *regex;
 +  pcre_extra *pextra;
 +  unsigned char domain_type;
-+#endif
 +#endif
  };
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index 05bcbe3..37c4dc9 100644
+index 3d2e947..96b12d1 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -730,6 +730,14 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -564,6 +564,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+	  if (ipset_pos->domain_type & IPSET_IS_REGEX){
-+		  if (match_regex(ipset_pos->regex, ipset_pos->pextra, daemon->namebuff, namelen, NULL))
-+		    sets = ipset_pos->sets;
-+	  }else{
-+#endif
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++	if (ipset_pos->domain_type & IPSET_IS_REGEX){
++		if (match_regex(ipset_pos->regex, ipset_pos->pextra, daemon->namebuff, namelen))
++			sets = ipset_pos->sets;
++	}else{
 +#endif
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -739,6 +747,11 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -573,6 +579,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+	  }
-+#endif
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++	}
 +#endif
  	}
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index 96bd2a5..02f4e9c 100644
+index e1a6a8a..da0a890 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2738,6 +2738,23 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2866,6 +2866,19 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
-+		 char *real_end = arg + strlen(arg);
-+		 if (*arg == ':' && *(real_end - 1) == ':'){
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+			 *(real_end - 1) = '\0';
-+			 ipsets->next = opt_malloc(sizeof(struct ipsets));
-+			 ipsets = ipsets->next;
-+			 memset(ipsets, 0, sizeof(struct ipsets));
-+			 const char *error = parse_regex_option(arg + 1, &ipsets->regex, &ipsets->pextra);
-+			 if (error)
-+				 ret_err(error);
-+			 ipsets->domain_type = IPSET_IS_REGEX;
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++		char *real_end = arg + strlen(arg);
++		if (*arg == ':' && *(real_end - 1) == ':'){
++			const char *error = NULL;
++			*(real_end - 1) = '\0';
++			ipsets->next = opt_malloc(sizeof(struct ipsets));
++			ipsets = ipsets->next;
++			memset(ipsets, 0, sizeof(struct ipsets));
++			if ((error = parse_regex_option(arg + 1, &ipsets->regex, &ipsets->pextra)))
++				ret_err(error);
++			ipsets->domain_type = IPSET_IS_REGEX;
++		}else{
 +#endif
-+#else
-+			 ret_err("Using a regex while server was configured without regex support!");
-+#endif
-+		 }else{
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2750,6 +2767,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2878,6 +2891,10 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+		 ipsets->domain_type = IPSET_IS_DOMAIN;
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
++			ipsets->domain_type = IPSET_IS_DOMAIN;
++		}
 +#endif
-+#endif
-+		 }
  		 arg = end;
  	       }
  	   } 
-@@ -2758,6 +2781,11 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
- 	     ipsets->next = opt_malloc(sizeof(struct ipsets));
- 	     ipsets = ipsets->next;
- 	     memset(ipsets, 0, sizeof(struct ipsets));
-+#ifdef HAVE_REGEX
-+#ifdef HAVE_REGEX_IPSET
-+	     ipsets->domain_type = IPSET_IS_DOMAIN;
-+#endif
-+#endif
- 	     ipsets->domain = "";
- 	   }
- 	 

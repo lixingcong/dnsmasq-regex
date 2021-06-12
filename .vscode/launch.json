@@ -1,0 +1,25 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Dnsmasq",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/dnsmasq/src/dnsmasq",
+			"args": ["-d", "-C", "/tmp/dnsmasq_regex_example.conf"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/dnsmasq",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"preLaunchTask":"Compile",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			]
+		}
+	]
+	}

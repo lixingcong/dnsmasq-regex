@@ -1,5 +1,11 @@
+commit 9f676571d017017df40e44bb1dfcbe73814670e4
+Author: lixingcong <lixingcong@live.com>
+Date:   Sat Jun 12 12:24:50 2021 +0800
+
+    001-server-patch
+
 diff --git a/Makefile b/Makefile
-index e4c3f5c..049a22a 100644
+index 5fc606f..6434029 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
@@ -34,21 +40,10 @@ index e4c3f5c..049a22a 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 8c41943..bb13db4 100644
+index da1e328..480a5aa 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -134,6 +134,10 @@ HAVE_LOOP
- HAVE_INOTIFY
-    use the Linux inotify facility to efficiently re-read configuration files.
- 
-+HAVE_REGEX
-+   Define this if you want to link against lib pcre to get regex
-+   support in "address=" and "server=" matches
-+
- NO_ID
-    Don't report *.bind CHAOS info to clients, forward such requests upstream instead.
- NO_TFTP
-@@ -191,6 +195,7 @@ RESOLVFILE
+@@ -192,6 +192,7 @@ RESOLVFILE
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_CRYPTOHASH */
  /* #define HAVE_DNSSEC */
@@ -56,7 +51,7 @@ index 8c41943..bb13db4 100644
  
  
  /* Default locations for important system files. */
-@@ -381,6 +386,10 @@ static char *compile_opts =
+@@ -382,6 +383,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -68,7 +63,7 @@ index 8c41943..bb13db4 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 1e21005..d93f05c 100644
+index 07d1f83..f8596ab 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -153,6 +153,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -82,7 +77,7 @@ index 1e21005..d93f05c 100644
  /* Backwards compat with 2.83 */
  #if defined(HAVE_NETTLEHASH)
  #  define HAVE_CRYPTOHASH
-@@ -539,6 +543,7 @@ union mysockaddr {
+@@ -542,6 +546,7 @@ union mysockaddr {
  #define SERV_LOOP           8192  /* server causes forwarding loop */
  #define SERV_DO_DNSSEC     16384  /* Validate DNSSEC when using this server */
  #define SERV_GOT_TCP       32768  /* Got some data from the TCP connection */
@@ -90,150 +85,494 @@ index 1e21005..d93f05c 100644
  
  struct serverfd {
    int fd;
-@@ -572,6 +577,10 @@ struct server {
-   u32 uid;
- #endif
-   struct server *next; 
+@@ -567,7 +572,12 @@ struct server {
+   int flags;
+   char *domain;
+   struct server *next;
+-  int serial, arrayposn;
 +#ifdef HAVE_REGEX
 +  pcre *regex;
 +  pcre_extra *pextra;
 +#endif
++  int arrayposn;
++  int serial;
+   int last_server;
+   union mysockaddr addr, source_addr;
+   char interface[IF_NAMESIZE+1];
+@@ -583,11 +593,16 @@ struct server {
+ #endif
+ };
+ 
+-/* First three fields must match struct server in next three definitions.. */
++/* First six fields must match struct server in next three definitions.. */
+ struct serv_addr4 {
+   int flags;
+   char *domain;
+   struct server *next;
++#ifdef HAVE_REGEX
++  pcre *regex;
++  pcre_extra *pextra;
++#endif
++  int arrayposn;
+   struct in_addr addr;
+ };
+ 
+@@ -595,6 +610,11 @@ struct serv_addr6 {
+   int flags;
+   char *domain;
+   struct server *next;
++#ifdef HAVE_REGEX
++  pcre *regex;
++  pcre_extra *pextra;
++#endif
++  int arrayposn;
+   struct in6_addr addr;
+ };
+ 
+@@ -602,6 +622,11 @@ struct serv_local {
+   int flags;
+   char *domain;
+   struct server *next;
++#ifdef HAVE_REGEX
++  pcre *regex;
++  pcre_extra *pextra;
++#endif
++  int arrayposn;
  };
  
  struct ipsets {
+@@ -1084,6 +1109,9 @@ extern struct daemon {
+   struct iname *if_names, *if_addrs, *if_except, *dhcp_except, *auth_peers, *tftp_interfaces;
+   struct bogus_addr *bogus_addr, *ignore_addr;
+   struct server *servers, *local_domains, **serverarray, *no_rebind;
++#ifdef HAVE_REGEX
++  int regexserverarraysz, regexlocaldomainarraysz;
++#endif
+   int serverarraysz;
+   struct ipsets *ipsets;
+   int log_fac; /* log facility */
+@@ -1728,6 +1756,11 @@ int filter_servers(int seed, int flags, int *lowout, int *highout);
+ int is_local_answer(time_t now, int first, char *name);
+ size_t make_local_answer(int flags, int gotname, size_t size, struct dns_header *header,
+ 			 char *name, int first, int last);
++#ifdef HAVE_REGEX
++int is_local_regex_answer(char *name, int *first, int *last);
++int find_regex_server(const char* domain, int is_local, int *arraypos);
++int match_regex(const pcre *regex, const pcre_extra *pextra, const char *str, size_t len);
++#endif
+ #ifdef HAVE_DNSSEC
+ int dnssec_server(struct server *server, char *keyname, int *firstp, int *lastp);
+ #endif
+diff --git a/src/domain-match.c b/src/domain-match.c
+index ba1d440..9061525 100644
+--- a/src/domain-match.c
++++ b/src/domain-match.c
+@@ -24,38 +24,90 @@ void build_server_array(void)
+ {
+   struct server *serv;
+   int count = 0;
+-  
+-  for (serv = daemon->servers; serv; serv = serv->next)
++#ifdef HAVE_REGEX
++  int regexserverarrayidx = 0;
++  int regexlocaldomainarrayidx = 0;
++  int totalcount = 0;
++  daemon->regexserverarraysz = 0;
++  daemon->regexlocaldomainarraysz = 0;
++#endif
++
++  for (serv = daemon->servers; serv; serv = serv->next){
++#ifdef HAVE_REGEX
++    if(serv->flags & SERV_IS_REGEX)
++      ++daemon->regexserverarraysz;
++    else
++#endif
+     count++;
++  }
+ 
+-  for (serv = daemon->local_domains; serv; serv = serv->next)
++  for (serv = daemon->local_domains; serv; serv = serv->next){
++#ifdef HAVE_REGEX
++    if(serv->flags & SERV_IS_REGEX)
++      ++daemon->regexlocaldomainarraysz;
++    else
++#endif
+     count++;
+-  
++  }
++
++#ifdef HAVE_REGEX
++  totalcount = count + daemon->regexserverarraysz + daemon->regexlocaldomainarraysz;
++  if (totalcount > daemon->serverarraysz)
++    {
++      struct server **new;
++      if ((new = whine_malloc(totalcount * sizeof(struct server *))))
++#else
+   if (count > daemon->serverarraysz)
+     {
+       struct server **new;
+-
+       if ((new = whine_malloc(count * sizeof(struct server *))))
++#endif
+ 	{
+ 	  if (daemon->serverarray)
+ 	    free(daemon->serverarray);
+ 	  
+ 	  daemon->serverarray = new;
+ 	  daemon->serverarraysz = count;
++
++#ifdef HAVE_REGEX
++    regexserverarrayidx = daemon->serverarraysz;
++    regexlocaldomainarrayidx = regexserverarrayidx + daemon->regexserverarraysz;
++#endif
+ 	}
+     }
+ 
+   count = 0;
+   
+-  for (serv = daemon->servers; serv; serv = serv->next, count++)
++  for (serv = daemon->servers; serv; serv = serv->next)
+     {
++#ifdef HAVE_REGEX
++      if(serv->flags & SERV_IS_REGEX){
++        daemon->serverarray[regexserverarrayidx]=serv;
++        serv->arrayposn=regexserverarrayidx;
++        ++regexserverarrayidx;
++        continue;
++      }
++#endif
+       daemon->serverarray[count] = serv;
+       serv->serial = count;
+       serv->last_server = -1;
++
++      ++count;
+     }
+ 
+-  for (serv = daemon->local_domains; serv; serv = serv->next, count++)
++  for (serv = daemon->local_domains; serv; serv = serv->next){
++#ifdef HAVE_REGEX
++      if(serv->flags & SERV_IS_REGEX){
++        daemon->serverarray[regexlocaldomainarrayidx]=serv;
++        serv->arrayposn=regexlocaldomainarrayidx;
++        ++regexlocaldomainarrayidx;
++        continue;
++      }
++#endif
+     daemon->serverarray[count] = serv;
++
++    ++count;
++  }
+   
+   qsort(daemon->serverarray, daemon->serverarraysz, sizeof(struct server *), order_qsort);
+ 
+@@ -84,10 +136,14 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+   int try, high, low = 0;
+   int nlow = 0, nhigh = 0;
+   char *cp;
++  int founddomain = 0;
++#ifdef HAVE_REGEX
++  char* originaldomain = qdomain;
++#endif
+ 
+   /* may be no configured servers. */
+   if (daemon->serverarraysz == 0)
+-    return 0;
++    goto search_regex;
+   
+   maxlen = strlen(daemon->serverarray[0]->domain);
+   
+@@ -190,9 +246,19 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+     *highout = nhigh;
+ 
+   if (nlow == nhigh)
+-    return 0;
++    goto search_regex;
+ 
+-  return 1;
++  founddomain = 1;
++
++search_regex:
++#ifdef HAVE_REGEX
++  if(find_regex_server(originaldomain, 0, &low)){
++    *lowout=low;
++    *highout=low+1;
++    founddomain = 1;
++  }
++#endif
++  return founddomain;
+ }
+ 
+ 
+@@ -264,6 +330,73 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+   return (nlow != nhigh);
+ }
+ 
++#ifdef HAVE_REGEX
++// return server flags
++int is_local_regex_answer(char *name, int *first, int *last)
++{
++	int iFirst = daemon->serverarraysz + daemon->regexserverarraysz;
++  const int iLast = iFirst + daemon->regexlocaldomainarraysz;
++  int flags = 0;
++  int rc = 0;
++  while(iFirst < iLast){
++    struct server *r = daemon->serverarray[iFirst];
++    if(match_regex(r->regex, r->pextra, name, strlen(name))){
++      *first = iFirst;
++      *last = *first + 1;
++
++      flags = r->flags;
++      if (flags & SERV_4ADDR)
++        rc = F_IPV4;
++      else if (flags & SERV_6ADDR)
++        rc = F_IPV6;
++      else if (flags & SERV_ALL_ZEROS)
++        rc = F_IPV4 | F_IPV6;
++      break;
++    }
++    ++iFirst;
++  }
++  return rc;
++}
++
++// return 1 if found, 0 for not found
++int find_regex_server(const char* domain, int is_local, int *arraypos)
++{
++		int iFirst = daemon->serverarraysz;
++		int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
++    const size_t domainLength = strlen(domain);
++
++    if(is_local){
++      iFirst=iLast;
++      iLast+=daemon->regexlocaldomainarraysz;
++    }
++
++    while(iFirst < iLast){
++      struct server* r = daemon->serverarray[iFirst];
++      if (match_regex(r->regex, r->pextra, domain, domainLength)){
++        *arraypos=iFirst;
++        return 1;
++      }
++      ++iFirst;
++    }
++
++    return 0;
++}
++
++// return 0 if not found
++int match_regex(const pcre *regex, const pcre_extra *pextra, const char *str, size_t len)
++{
++	int captcount = 0;
++	int ret = 0;
++	if (pcre_fullinfo(regex, pextra, PCRE_INFO_CAPTURECOUNT, &captcount) == 0)
++	{
++		/* C99 dyn-array, or alloca must be used */
++		int ovect[(captcount + 1) * 3];
++		ret = pcre_exec(regex, pextra, str, len, 0, 0, ovect, (captcount + 1) * 3) > 0;
++	}
++	return ret;
++}
++#endif
++
+ int is_local_answer(time_t now, int first, char *name)
+ {
+   int flags = 0;
 diff --git a/src/forward.c b/src/forward.c
-index 40c9723..05bcbe3 100644
+index 9de8379..3d2e947 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -23,6 +23,24 @@ static unsigned short get_id(void);
- static void free_frec(struct frec *f);
- static void query_full(time_t now);
+@@ -266,6 +266,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+       /* Configured answer. */
+       if ((flags = is_local_answer(now, first, daemon->namebuff)))
+ 	goto reply;
++
++#ifdef HAVE_REGEX
++	if ((flags = is_local_regex_answer(daemon->namebuff, &first, &last)))
++		goto reply;
++#endif
+       
+       master = daemon->serverarray[first];
+       
+@@ -346,10 +351,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+ 	{
+ 	  /* retry on existing query, from original source. Send to all available servers  */
+ 	  forward->sentto->failed_queries++;
+-	  
++#ifdef HAVE_REGEX
++		if(forward->sentto->flags & SERV_IS_REGEX){
++			start = first = forward->sentto->arrayposn;
++			last = first + 1;
++			forward->forwardall = 0;
++		}else
+ 	  if (!filter_servers(forward->sentto->arrayposn, F_SERVER, &first, &last))
+ 	    goto reply;
+-	  
++#endif
+ 	  master = daemon->serverarray[first];
+ 	  
+ 	  /* Forward to all available servers on retry of query from same host. */
+@@ -435,8 +445,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+   while (1)
+     { 
+       int fd;
+-      struct server *srv = daemon->serverarray[start];
+-      
++
++	struct server *srv = daemon->serverarray[start];
++#ifdef HAVE_REGEX
++	if (srv->flags & SERV_IS_REGEX)
++		forward->forwardall = 0; // make it send only once
++#endif
++
+       if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
+ 	{
+ 	  
+@@ -877,6 +892,9 @@ void reply_query(int fd, time_t now)
+   ssize_t n = recvfrom(fd, daemon->packet, daemon->packet_buff_sz, 0, &serveraddr.sa, &addrlen);
+   size_t nn;
+   struct server *server;
++#ifdef HAVE_REGEX
++  struct server *regex_server = NULL;
++#endif
+   void *hash;
+   int first, last, c;
+   int check_rebind = 0, no_cache_dnssec = 0, cache_secure = 0, bogusanswer = 0;
+@@ -905,15 +923,38 @@ void reply_query(int fd, time_t now)
+     if (sockaddr_isequal(&daemon->serverarray[c]->addr, &serveraddr))
+       break;
+   
+-  if (c == last)
++  if (c == last){
++#ifdef HAVE_REGEX
++	int iFirst = daemon->serverarraysz;
++	const int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
++	while(iFirst < iLast){
++		struct server * r = daemon->serverarray[iFirst];
++		if (sockaddr_isequal(&r->addr, &serveraddr)){
++			regex_server=r;
++			break;
++		}
++		++iFirst;
++	}
++
++	if(!regex_server)
++#endif
+     return;
++  }
  
 +#ifdef HAVE_REGEX
-+static inline int match_regex(const pcre * regex, const pcre_extra * pextra, const char* str, size_t len, unsigned int* group0_len)
-+{
-+    int captcount = 0;
-+    int ret = 0;
-+    if (pcre_fullinfo(regex, pextra, PCRE_INFO_CAPTURECOUNT, &captcount) == 0)
-+    {
-+        /* C99 dyn-array, or alloca must be used */
-+        int ovect[(captcount + 1) * 3];
-+        ret = pcre_exec(regex, pextra, str, len, 0, 0, ovect, (captcount + 1) * 3) > 0;
-+ 
-+        if (group0_len && ret)
-+            *group0_len = (unsigned int) (ovect[1] - ovect[0]); // captured group 0
-+    }
-+    return ret;
-+}
++	if(regex_server)
++		server=regex_server;
++	else{
 +#endif
-+
- /* Send a UDP packet with its source address set as "source" 
-    unless nowild is true, when we just send it with the kernel default */
- int send_from(int fd, int nowild, char *packet, size_t len, 
-@@ -155,11 +173,28 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
-       }
-     else if (serv->flags & SERV_HAS_DOMAIN)
-       {
--	unsigned int domainlen = strlen(serv->domain);
--	char *matchstart = qdomain + namelen - domainlen;
--	if (namelen >= domainlen &&
--	    hostname_isequal(matchstart, serv->domain) &&
--	    (domainlen == 0 || namelen == domainlen || *(matchstart-1) == '.' ))
-+	unsigned int domainlen = matchlen;
-+	int serverhit = 0;
-+
-+#ifdef HAVE_REGEX
-+	if (serv->flags & SERV_IS_REGEX)
-+	  {
-+		if (match_regex(serv->regex, serv->pextra, qdomain, namelen, &domainlen) && domainlen >= matchlen)
-+		  serverhit = 1;
-+	  }
-+	else
-+#endif
-+	  {
-+	    char *matchstart;
-+	    domainlen = strlen(serv->domain);
-+	    matchstart = qdomain + namelen - domainlen;
-+	    if (namelen >= domainlen &&
-+	        hostname_isequal(matchstart, serv->domain) &&
-+	        (domainlen == 0 || namelen == domainlen || *(matchstart-1) == '.' ))
-+	       serverhit = 1;
-+	  }
-+
-+	if (serverhit)
- 	  {
- 	    if ((serv->flags & SERV_NO_REBIND) && norebind)	
- 	      *norebind = 1;
-@@ -186,6 +221,11 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
- 		if (domainlen >= matchlen)
- 		  {
- 		    *type = serv->flags & (SERV_HAS_DOMAIN | SERV_USE_RESOLV | SERV_NO_REBIND | SERV_DO_DNSSEC);
-+#ifdef HAVE_REGEX
-+		    if (serv->flags & SERV_IS_REGEX)
-+				*domain = qdomain;
-+		    else
-+#endif
- 		    *domain = serv->domain;
- 		    matchlen = domainlen;
- 		    if (serv->flags & SERV_NO_ADDR)
-@@ -285,11 +325,27 @@ static void server_send_log(struct server *server, int fd,
- }
- #endif
+   server = daemon->serverarray[c];
  
+   if (RCODE(header) != REFUSED)
+     daemon->serverarray[first]->last_server = c;
+   else if (daemon->serverarray[first]->last_server == c)
+     daemon->serverarray[first]->last_server = -1;
 +#ifdef HAVE_REGEX
-+static int match_domain_for_forward(const char *domain, const struct server *serv)
-+{
-+  int ret_val = 0;
-+  if(serv->flags & SERV_IS_REGEX)
-+    ret_val = match_regex(serv->regex, serv->pextra, domain, strlen(domain), NULL);
-+  else
-+    ret_val = hostname_isequal(domain, serv->domain);
-+  return ret_val;
-+}
++	}
 +#endif
-+
- static int server_test_type(const struct server *server,
- 			    const char *domain, int type, int extratype)
- {
-   return (type == (server->flags & (SERV_TYPE | extratype)) &&
+ 
+   /* If sufficient time has elapsed, try and expand UDP buffer size again. */
+   if (difftime(now, server->pktsz_reduced) > UDP_TEST_TIME)
+@@ -1664,6 +1705,9 @@ unsigned char *tcp_request(int confd, time_t now,
+   int have_mark = 0;
+   int first, last;
+   unsigned int flags = 0;
 +#ifdef HAVE_REGEX
-+      (type != SERV_HAS_DOMAIN || match_domain_for_forward(domain, server)) &&
++  int foundServer = 0;
++#endif
+   
+   if (getpeername(confd, (struct sockaddr *)&peer_addr, &peer_len) == -1)
+     return packet;
+@@ -1814,10 +1858,23 @@ unsigned char *tcp_request(int confd, time_t now,
+ 		  !strchr(daemon->namebuff, '.') &&
+ 		  strlen(daemon->namebuff) != 0)
+ 		flags = F_NOERR;
++#ifdef HAVE_REGEX
++		else{
++			foundServer = lookup_domain(daemon->namebuff, gotname, &first, &last);
++			flags = is_local_answer(now, first, daemon->namebuff);
++			if(!flags)
++				flags = is_local_regex_answer(daemon->namebuff, &first, &last);
++			if(foundServer && !flags)
 +#else
-       (type != SERV_HAS_DOMAIN || hostname_isequal(domain, server->domain)) &&
+ 	      else if (lookup_domain(daemon->namebuff, gotname, &first, &last) && !(flags = is_local_answer(now, first, daemon->namebuff)))
 +#endif
-       !(server->flags & (SERV_LITERAL_ADDRESS | SERV_LOOP)));
+ 		{
+ 		  master = daemon->serverarray[first];
+-		  
++#ifdef HAVE_REGEX
++			if(master->flags & SERV_IS_REGEX)
++				start = first;
++			else
++#endif
+ 		  if (option_bool(OPT_ORDER) || master->last_server == -1)
+ 		    start = first;
+ 		  else
+@@ -1898,9 +1955,12 @@ unsigned char *tcp_request(int confd, time_t now,
+ 				    option_bool(OPT_NO_REBIND) && !norebind, no_cache_dnssec, cache_secure, bogusanswer,
+ 				    ad_reqd, do_bit, added_pheader, check_subnet, &peer_addr); 
+ 		}
++#ifdef HAVE_REGEX
++		}
++#endif
+ 	    }
+ 	}
+-      
++
+       /* In case of local answer or no connections made. */
+       if (m == 0)
+ 	{
+@@ -2260,7 +2320,6 @@ static void query_full(time_t now)
+     }
  }
  
-@@ -418,6 +474,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
- #endif
- 
-       /* retry on existing query, from original source. Send to all available servers  */
+-
+ static struct frec *lookup_frec(unsigned short id, int fd, void *hash, int *firstp, int *lastp)
+ {
+   struct frec *f;
+@@ -2288,6 +2347,18 @@ static struct frec *lookup_frec(unsigned short id, int fd, void *hash, int *firs
+ 	    if (s->sfd && s->sfd->fd == fd)
+ 	      return f;
+ 	  }
 +#ifdef HAVE_REGEX
-+      if(forward->sentto->flags & SERV_IS_REGEX)
-+        domain = daemon->namebuff;
-+      else
++	{
++		int iFirst = daemon->serverarraysz;
++		const int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
++		while(iFirst < iLast){
++			struct server* r = daemon->serverarray[iFirst];
++			if (r->sfd && r->sfd->fd == fd)
++				return f;
++			++iFirst;
++		}
++	}
 +#endif
-       domain = forward->sentto->domain;
-       forward->sentto->failed_queries++;
-       if (!option_bool(OPT_ORDER) && old_src)
+       }
+   
+   return NULL;
 diff --git a/src/network.c b/src/network.c
-index 3600250..1b5dca5 100644
+index e0b3ec8..6bf5e1a 100644
 --- a/src/network.c
 +++ b/src/network.c
-@@ -1703,7 +1703,7 @@ void check_servers(void)
- 	    serv->sfd->used = 1;
- 	}
-       
--      if (!(serv->flags & SERV_NO_REBIND) && !(serv->flags & SERV_LITERAL_ADDRESS))
-+      if (!(serv->flags & (SERV_NO_REBIND | SERV_IS_REGEX)) && !(serv->flags & SERV_LITERAL_ADDRESS))
- 	{
- 	  if (++count > SERVERS_LOGGED)
- 	    continue;
+@@ -1735,6 +1735,10 @@ void check_servers(void)
+ 	    s1 = _("unqualified"), s2 = _("names");
+ 	  else if (strlen(serv->domain) == 0)
+ 	    s1 = _("default"), s2 = "";
++#ifdef HAVE_REGEX
++    else if (serv->flags & SERV_IS_REGEX)
++      s1 = _("regex domain"), s2 = serv->domain;
++#endif
+ 	  else
+ 	    s1 = _("domain"), s2 = serv->domain;
+ 	  
 diff --git a/src/option.c b/src/option.c
-index 6de5914..96bd2a5 100644
+index cacfaa6..e1a6a8a 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -714,6 +714,19 @@ static void add_txt(char *name, char *txt, int stat)
+@@ -739,6 +739,19 @@ static void add_txt(char *name, char *txt, int stat)
  }
  #endif
  
@@ -244,7 +583,7 @@ index 6de5914..96bd2a5 100644
 +  int erroff;
 +  *regex = pcre_compile(arg, 0, &error, &erroff, NULL);
 +  if(NULL == *regex)
-+	return error;
++    return error;
 +  *pextra = pcre_study(*regex, 0, &error);
 +  return NULL;
 +}
@@ -253,67 +592,60 @@ index 6de5914..96bd2a5 100644
  static void do_usage(void)
  {
    char buff[100];
-@@ -2574,6 +2587,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
- 	    while (rebind || (end = split_chr(arg, '/')))
- 	      {
- 		char *domain = NULL;
-+		char *regex = NULL;
-+		char *real_end = arg + strlen(arg);
-+		if (*arg == ':' && *(real_end - 1) == ':'){
-+			*(real_end - 1) = '\0';
-+			regex = arg + 1;
-+		}else{
- 		/* elide leading dots - they are implied in the search algorithm */
- 		while (*arg == '.') arg++;
- 		/* # matches everything and becomes a zero length domain string */
-@@ -2581,12 +2600,23 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
- 		  domain = "";
- 		else if (strlen (arg) != 0 && !(domain = canonicalise_opt(arg)))
- 		  ret_err(gen_err);
-+		}
- 		serv = opt_malloc(sizeof(struct server));
- 		memset(serv, 0, sizeof(struct server));
- 		serv->next = newlist;
- 		newlist = serv;
- 		serv->domain = domain;
--		serv->flags = domain ? SERV_HAS_DOMAIN : SERV_FOR_NODOTS;
-+		serv->flags = domain || regex ? SERV_HAS_DOMAIN : SERV_FOR_NODOTS;
-+		if (regex){
+@@ -2638,6 +2651,10 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 	char *err;
+ 	struct in_addr addr4;
+ 	struct in6_addr addr6;
 +#ifdef HAVE_REGEX
-+			const char *error = parse_regex_option(regex, &serv->regex, &serv->pextra);
-+			if (error)
-+				ret_err(error);
-+			serv->flags |= SERV_IS_REGEX;
-+#else
-+			ret_err("Using a regex while server was configured without regex support!");
++	char *regex = NULL;
++	char *regex_end = NULL;
 +#endif
+ 
+ 	unhide_metas(arg);
+ 	
+@@ -2654,6 +2671,14 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 		lastdomain = arg;
+ 		arg = last;
+ 	      }
++#ifdef HAVE_REGEX
++		regex_end = domain + strlen(domain);
++		if (*domain == ':' && *(regex_end - 1) == ':'){
++			++domain; // skip leading ':'
++			*(regex_end - 1) = '\0'; // skip tailing ':'
++			regex = domain;
 +		}
- 		arg = end;
- 		if (rebind)
- 		  break;
-diff --git a/src/rfc1035.c b/src/rfc1035.c
-index 5a961b8..2b05f0e 100644
---- a/src/rfc1035.c
-+++ b/src/rfc1035.c
-@@ -1569,6 +1569,8 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
++#endif
+ 	  }
+ 	
+ 	if (servers_only && option == 'S')
+@@ -2728,17 +2753,28 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 		daemon->servers = new;
+ 	      }
+ 	  }
+-	
++
++#ifdef HAVE_REGEX
++	if (regex){
++		if((err=(char*)parse_regex_option(regex, &new->regex, &new->pextra)))
++			ret_err(err);
++		flags |= SERV_IS_REGEX;
++	}
++#endif
++
+ 	new->domain = alloc_domain;
+ 	
+ 	/* server=//1.2.3.4 is special. */
+ 	if (strlen(domain) == 0 && lastdomain)
+ 	  flags |= SERV_FOR_NODOTS;
+-	
+ 	new->flags = flags;
  
- 		      if ((serv->flags & (SERV_HAS_DOMAIN | SERV_NO_ADDR)) != SERV_HAS_DOMAIN)
- 		        continue;
-+		      
-+		      if (NULL == serv->domain) continue;
- 
- 		      domainlen = strlen(serv->domain);
- 		      if (domainlen == 0 || domainlen > namelen)
-diff --git a/src/util.c b/src/util.c
-index 6176dc9..1147009 100644
---- a/src/util.c
-+++ b/src/util.c
-@@ -351,6 +351,8 @@ int hostname_isequal(const char *a, const char *b)
- {
-   unsigned int c1, c2;
-   
-+  if(NULL == a || NULL == b) return (NULL == a && NULL == b);
-+  
-   do {
-     c1 = (unsigned char) *a++;
-     c2 = (unsigned char) *b++;
+ 	/* If we have more than one domain, copy and iterate */
++#ifdef HAVE_REGEX
++	if (lastdomain && NULL == regex)
++#else
+ 	if (lastdomain)
++#endif
+ 	   while (domain != lastdomain)
+ 	     {
+ 	       struct server *last = new;

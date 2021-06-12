@@ -9,6 +9,9 @@ DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET"
 
 all:$(BIN)
 
+submodule:$(BIN)
+	cd dnsmasq && $(MAKE) COPTS=$(DNSMASQ_COPTS)
+
 $(BIN):$(PATCHED)
 	cd dnsmasq && $(MAKE) COPTS=$(DNSMASQ_COPTS)
 	$(MAKE) remove_patched
