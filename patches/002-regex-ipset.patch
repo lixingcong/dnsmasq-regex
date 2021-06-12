@@ -1,9 +1,3 @@
-commit bc95d8e59b355d252d13df120406355160bf29f8
-Author: lixingcong <lixingcong@live.com>
-Date:   Sat Jun 12 11:47:26 2021 +0800
-
-    002-ipset-patch
-
 diff --git a/src/config.h b/src/config.h
 index 480a5aa..42eca18 100644
 --- a/src/config.h
@@ -31,7 +25,7 @@ index 480a5aa..42eca18 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index f8596ab..665a7ab 100644
+index 9875ade..75b1c65 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -629,10 +629,20 @@ struct serv_local {

@@ -1,11 +1,5 @@
-commit 9f676571d017017df40e44bb1dfcbe73814670e4
-Author: lixingcong <lixingcong@live.com>
-Date:   Sat Jun 12 12:24:50 2021 +0800
-
-    001-server-patch
-
 diff --git a/Makefile b/Makefile
-index 5fc606f..6434029 100644
+index 367cd26..e5e718f 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
@@ -63,7 +57,7 @@ index da1e328..480a5aa 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 07d1f83..f8596ab 100644
+index 07d1f83..9875ade 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -153,6 +153,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -156,7 +150,7 @@ index 07d1f83..f8596ab 100644
  size_t make_local_answer(int flags, int gotname, size_t size, struct dns_header *header,
  			 char *name, int first, int last);
 +#ifdef HAVE_REGEX
-+int is_local_regex_answer(char *name, int *first, int *last);
++int is_local_regex_answer(const char *domain, int *first, int *last);
 +int find_regex_server(const char* domain, int is_local, int *arraypos);
 +int match_regex(const pcre *regex, const pcre_extra *pextra, const char *str, size_t len);
 +#endif
@@ -164,7 +158,7 @@ index 07d1f83..f8596ab 100644
  int dnssec_server(struct server *server, char *keyname, int *firstp, int *lastp);
  #endif
 diff --git a/src/domain-match.c b/src/domain-match.c
-index ba1d440..9061525 100644
+index ba1d440..de26d03 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -24,38 +24,90 @@ void build_server_array(void)
@@ -287,15 +281,15 @@ index ba1d440..9061525 100644
    if (nlow == nhigh)
 -    return 0;
 +    goto search_regex;
++
++  founddomain = 1;
  
 -  return 1;
-+  founddomain = 1;
-+
 +search_regex:
 +#ifdef HAVE_REGEX
 +  if(find_regex_server(originaldomain, 0, &low)){
-+    *lowout=low;
-+    *highout=low+1;
++    *lowout = low;
++    *highout = low+1;
 +    founddomain = 1;
 +  }
 +#endif
@@ -303,34 +297,29 @@ index ba1d440..9061525 100644
  }
  
  
-@@ -264,6 +330,73 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -264,6 +330,68 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
 +#ifdef HAVE_REGEX
 +// return server flags
-+int is_local_regex_answer(char *name, int *first, int *last)
++int is_local_regex_answer(const char *domain, int *first, int *last)
 +{
-+	int iFirst = daemon->serverarraysz + daemon->regexserverarraysz;
-+  const int iLast = iFirst + daemon->regexlocaldomainarraysz;
 +  int flags = 0;
 +  int rc = 0;
-+  while(iFirst < iLast){
-+    struct server *r = daemon->serverarray[iFirst];
-+    if(match_regex(r->regex, r->pextra, name, strlen(name))){
-+      *first = iFirst;
-+      *last = *first + 1;
++  int arraypos = 0;
++  if(find_regex_server(domain, 1, &arraypos)){
++    struct server *r = daemon->serverarray[arraypos];
++    *first = arraypos;
++    *last = *first + 1;
 +
-+      flags = r->flags;
-+      if (flags & SERV_4ADDR)
-+        rc = F_IPV4;
-+      else if (flags & SERV_6ADDR)
-+        rc = F_IPV6;
-+      else if (flags & SERV_ALL_ZEROS)
-+        rc = F_IPV4 | F_IPV6;
-+      break;
-+    }
-+    ++iFirst;
++    flags = r->flags;
++    if (flags & SERV_4ADDR)
++      rc = F_IPV4;
++    else if (flags & SERV_6ADDR)
++      rc = F_IPV6;
++    else if (flags & SERV_ALL_ZEROS)
++      rc = F_IPV4 | F_IPV6;
 +  }
 +  return rc;
 +}
@@ -338,25 +327,25 @@ index ba1d440..9061525 100644
 +// return 1 if found, 0 for not found
 +int find_regex_server(const char* domain, int is_local, int *arraypos)
 +{
-+		int iFirst = daemon->serverarraysz;
-+		int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
-+    const size_t domainLength = strlen(domain);
++  int iFirst = daemon->serverarraysz;
++  int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
++  const size_t domainLength = strlen(domain);
 +
-+    if(is_local){
-+      iFirst=iLast;
-+      iLast+=daemon->regexlocaldomainarraysz;
++  if(is_local){
++    iFirst=iLast;
++    iLast+=daemon->regexlocaldomainarraysz;
++  }
++
++  while(iFirst < iLast){
++    struct server* r = daemon->serverarray[iFirst];
++    if (match_regex(r->regex, r->pextra, domain, domainLength)){
++      *arraypos=iFirst;
++      return 1;
 +    }
++    ++iFirst;
++  }
 +
-+    while(iFirst < iLast){
-+      struct server* r = daemon->serverarray[iFirst];
-+      if (match_regex(r->regex, r->pextra, domain, domainLength)){
-+        *arraypos=iFirst;
-+        return 1;
-+      }
-+      ++iFirst;
-+    }
-+
-+    return 0;
++  return 0;
 +}
 +
 +// return 0 if not found
