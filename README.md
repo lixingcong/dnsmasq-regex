@@ -64,7 +64,7 @@ DNSMASQ_COPTS="-DHAVE_REGEX"
 
 ## Config file example
 
-You could write regex line starts with ':' and ends witch ':'
+You could write regex line starts with ':' and ends with ':'
 
 ```
 server=114.114.114.114
@@ -88,13 +88,13 @@ Here is a example config file: [dnsmasq\_regex\_example.conf](/dnsmasq_regex_exa
 
 Tips: A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
 
-*Notes for version above v2.86*
+### Notes for version above v2.86
 
 Simon, the author of Dnsmasq, has rewritten the function to shorten the lookup time for queries. Reference: [commit](https://thekelleys.org.uk/gitweb/?p=dnsmasq.git;a=commit;h=12a9aa7c628e2d7dcd34949603848a3fb53fce9c). I have to rewrite the patch too. So the domain match function was changed.
 
-If you upgrade from older version(2.85 or older), considering modify your config file. Maybe just simply move lines up and down. :)
+If you upgrade from older version(2.85 or older), considering modify your config file. Maybe just simply move lines up and down.😉
 
-The regex lines` will generate a linkedlist to match(from top to bottom). If the domain matched both regex servers, DNS query will be forwarded the one which appears first.
+The regex lines will generate a linkedlist to match(from top to bottom). If the domain matched both regex servers, DNS query will be forwarded the one which appears first.
 
 Consider the config file below, the domain ```wx.qq.com``` will be forwarded to upstream ```1.1.1.1```, not ```8.8.8.8```
 

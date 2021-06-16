@@ -152,7 +152,7 @@ index 696408a..4df3230 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index 53bb9b1..b7e8a71 100644
+index 53bb9b1..84f7f08 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -24,18 +24,44 @@ void build_server_array(void)
@@ -314,21 +314,21 @@ index 53bb9b1..b7e8a71 100644
 +int find_regex_server(const char* domain, int is_local, int *arraypos)
 +{
 +  int iFirst = daemon->serverarraysz;
-+  int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
++  int iLast = daemon->serverarraysz + daemon->regexserverarraysz - 1;
 +  const size_t domainLength = strlen(domain);
 +
-+  if(is_local){
-+    iFirst=iLast;
-+    iLast+=daemon->regexlocaldomainarraysz;
++  if (is_local){
++    iFirst = iLast + 1;
++    iLast += daemon->regexlocaldomainarraysz;
 +  }
 +
-+  while(iFirst < iLast){
-+    struct server* r = daemon->serverarray[iFirst];
++  while(iFirst <= iLast){
++    struct server* r = daemon->serverarray[iLast];
 +    if (match_regex(r->regex, r->pextra, domain, domainLength)){
-+      *arraypos=iFirst;
++      *arraypos=iLast;
 +      return 1;
 +    }
-+    ++iFirst;
++    --iLast;
 +  }
 +
 +  return 0;
@@ -353,7 +353,7 @@ index 53bb9b1..b7e8a71 100644
  {
    int flags = 0;
 diff --git a/src/forward.c b/src/forward.c
-index de36ff2..31bd5b8 100644
+index de36ff2..77988a8 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -276,6 +276,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -419,15 +419,15 @@ index de36ff2..31bd5b8 100644
 -  if (c == last)
 +  if (c == last){
 +#ifdef HAVE_REGEX
-+	int iFirst = daemon->serverarraysz;
-+	const int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
-+	while(iFirst < iLast){
-+		struct server * r = daemon->serverarray[iFirst];
++	const int iFirst = daemon->serverarraysz;
++	int iLast = daemon->serverarraysz + daemon->regexserverarraysz - 1;
++	while(iFirst <= iLast){
++		struct server * r = daemon->serverarray[iLast];
 +		if (sockaddr_isequal(&r->addr, &serveraddr)){
 +			regex_server=r;
 +			break;
 +		}
-+		++iFirst;
++		--iLast;
 +	}
 +
 +	if(!regex_server)
@@ -515,13 +515,13 @@ index de36ff2..31bd5b8 100644
  	  }
 +#ifdef HAVE_REGEX
 +	{
-+		int iFirst = daemon->serverarraysz;
-+		const int iLast = daemon->serverarraysz + daemon->regexserverarraysz;
-+		while(iFirst < iLast){
-+			struct server* r = daemon->serverarray[iFirst];
++		const int iFirst = daemon->serverarraysz;
++		int iLast = daemon->serverarraysz + daemon->regexserverarraysz - 1;
++		while(iFirst <= iLast){
++			struct server* r = daemon->serverarray[iLast];
 +			if (r->sfd && r->sfd->fd == fd)
 +				return f;
-+			++iFirst;
++			--iLast;
 +		}
 +	}
 +#endif
