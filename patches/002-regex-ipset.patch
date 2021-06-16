@@ -1,5 +1,5 @@
 diff --git a/src/config.h b/src/config.h
-index 480a5aa..42eca18 100644
+index c82a675..c525c1c 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -193,6 +193,7 @@ RESOLVFILE
@@ -25,11 +25,11 @@ index 480a5aa..42eca18 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 9875ade..75b1c65 100644
+index 4df3230..0ddadda 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -629,10 +629,20 @@ struct serv_local {
-   int arrayposn;
+@@ -625,10 +625,20 @@ struct serv_local {
+ #endif
  };
  
 +#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
@@ -50,10 +50,10 @@ index 9875ade..75b1c65 100644
  
  struct irec {
 diff --git a/src/forward.c b/src/forward.c
-index 3d2e947..96b12d1 100644
+index 31bd5b8..f292bc5 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -564,6 +564,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -574,6 +574,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -66,7 +66,7 @@ index 3d2e947..96b12d1 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -573,6 +579,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -583,6 +589,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
