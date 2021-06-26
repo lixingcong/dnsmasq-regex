@@ -3,7 +3,7 @@
 # for debug only
 # ./src/dnsmasq -d -C /tmp/dnsmasq_regex_example.conf -q
 
-DIG="dig @localhost -p30000"
+DIG="dig @localhost -p30000 +retry=0"
 REDIR=/dev/null
 
 echo 'UDP, server'
@@ -37,8 +37,8 @@ for (( i=0; i<${arraylength}; i++ ));do
 done
 
 echo 'TCP, local'
-domains=("q.com" "qzone.qq.com" "xxx.localhost.com")
-expect_dns=("local" "local" "local")
+domains=("q.com" "1.q.com" "qzone.qq.com" "xxx.localhost.com")
+expect_dns=("114.114.114.114" "local" "local" "local")
 arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}

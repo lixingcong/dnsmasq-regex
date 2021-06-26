@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 0cd592e..e68953e 100644
+index 2549e7c..d54f92b 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
@@ -138,7 +138,7 @@ index b21fc17..ae99c72 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index acaafbf..a0d09aa 100644
+index acaafbf..7ac0663 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -24,18 +24,44 @@ void build_server_array(void)
@@ -191,7 +191,7 @@ index acaafbf..a0d09aa 100644
  	{
  	  if (daemon->serverarray)
  	    free(daemon->serverarray);
-@@ -46,16 +72,37 @@ void build_server_array(void)
+@@ -46,22 +72,47 @@ void build_server_array(void)
      }
  
    count = 0;
@@ -231,7 +231,17 @@ index acaafbf..a0d09aa 100644
    
    qsort(daemon->serverarray, daemon->serverarraysz, sizeof(struct server *), order_qsort);
  
-@@ -86,10 +133,15 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+   /* servers need the location in the array to find all the whole
+      set of equivalent servers from a pointer to a single one. */
++#ifdef HAVE_REGEX
++  for (count = 0; count < daemon->serverarraysz + daemon->regexserverarraysz; count++)
++#else
+   for (count = 0; count < daemon->serverarraysz; count++)
++#endif
+     if (!(daemon->serverarray[count]->flags & (SERV_LITERAL_ADDRESS | SERV_USE_RESOLV)))
+       daemon->serverarray[count]->arrayposn = count;
+ }
+@@ -86,10 +137,15 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
    int try, high, low = 0;
    int nlow = 0, nhigh = 0;
    char *cp;
@@ -248,7 +258,7 @@ index acaafbf..a0d09aa 100644
    
    /* find query length and presence of '.' */
    for (cp = qdomain, nodots = 1, qlen = 0; *cp; qlen++, cp++)
-@@ -211,9 +263,27 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+@@ -211,9 +267,27 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
      *highout = nhigh;
  
    if (nlow == nhigh)
@@ -278,7 +288,7 @@ index acaafbf..a0d09aa 100644
  }
  
  /* Return first server in group of equivalent servers; this is the "master" record. */
-@@ -299,6 +369,68 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -299,6 +373,68 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
@@ -348,7 +358,7 @@ index acaafbf..a0d09aa 100644
  {
    int flags = 0;
 diff --git a/src/forward.c b/src/forward.c
-index 9b8b8db..1355272 100644
+index 9b8b8db..e77ed5c 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -275,6 +275,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -397,57 +407,7 @@ index 9b8b8db..1355272 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -918,6 +933,9 @@ void reply_query(int fd, time_t now)
-   socklen_t addrlen = sizeof(serveraddr);
-   ssize_t n = recvfrom(fd, daemon->packet, daemon->packet_buff_sz, 0, &serveraddr.sa, &addrlen);
-   struct server *server;
-+#ifdef HAVE_REGEX
-+  struct server *regex_server = NULL;
-+#endif
-   void *hash;
-   int first, last, c;
-     
-@@ -945,15 +963,38 @@ void reply_query(int fd, time_t now)
-     if (sockaddr_isequal(&daemon->serverarray[c]->addr, &serveraddr))
-       break;
-   
--  if (c == last)
-+  if (c == last){
-+#ifdef HAVE_REGEX
-+	const int iFirst = daemon->serverarraysz;
-+	int iLast = daemon->serverarraysz + daemon->regexserverarraysz - 1;
-+	while(iFirst <= iLast){
-+		struct server * r = daemon->serverarray[iLast];
-+		if (sockaddr_isequal(&r->addr, &serveraddr)){
-+			regex_server=r;
-+			break;
-+		}
-+		--iLast;
-+	}
-+
-+	if(!regex_server)
-+#endif
-     return;
-+  }
- 
-+#ifdef HAVE_REGEX
-+	if(regex_server)
-+		server=regex_server;
-+	else{
-+#endif
-   server = daemon->serverarray[c];
- 
-   if (RCODE(header) != REFUSED)
-     daemon->serverarray[first]->last_server = c;
-   else if (daemon->serverarray[first]->last_server == c)
-     daemon->serverarray[first]->last_server = -1;
-+#ifdef HAVE_REGEX
-+	}
-+#endif
- 
-   /* If sufficient time has elapsed, try and expand UDP buffer size again. */
-   if (difftime(now, server->pktsz_reduced) > UDP_TEST_TIME)
-@@ -1826,6 +1867,9 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -1826,6 +1841,9 @@ unsigned char *tcp_request(int confd, time_t now,
    int have_mark = 0;
    int first, last;
    unsigned int flags = 0;
@@ -457,7 +417,7 @@ index 9b8b8db..1355272 100644
    
    if (getpeername(confd, (struct sockaddr *)&peer_addr, &peer_len) == -1)
      return packet;
-@@ -1998,10 +2042,23 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -1998,10 +2016,23 @@ unsigned char *tcp_request(int confd, time_t now,
  		  !strchr(daemon->namebuff, '.') &&
  		  strlen(daemon->namebuff) != 0)
  		flags = F_NOERR;
@@ -482,7 +442,7 @@ index 9b8b8db..1355272 100644
  		  if (option_bool(OPT_ORDER) || master->last_server == -1)
  		    start = first;
  		  else
-@@ -2082,9 +2139,12 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2082,9 +2113,12 @@ unsigned char *tcp_request(int confd, time_t now,
  				    option_bool(OPT_NO_REBIND) && !norebind, no_cache_dnssec, cache_secure, bogusanswer,
  				    ad_reqd, do_bit, added_pheader, check_subnet, &peer_addr); 
  		}
@@ -496,25 +456,6 @@ index 9b8b8db..1355272 100644
        /* In case of local answer or no connections made. */
        if (m == 0)
  	{
-@@ -2460,6 +2520,18 @@ static struct frec *lookup_frec(unsigned short id, int fd, void *hash, int *firs
- 	    if (s->sfd && s->sfd->fd == fd)
- 	      return f;
- 	  }
-+#ifdef HAVE_REGEX
-+	{
-+		const int iFirst = daemon->serverarraysz;
-+		int iLast = daemon->serverarraysz + daemon->regexserverarraysz - 1;
-+		while(iFirst <= iLast){
-+			struct server* r = daemon->serverarray[iLast];
-+			if (r->sfd && r->sfd->fd == fd)
-+				return f;
-+			--iLast;
-+		}
-+	}
-+#endif
-       }
-   
-   return NULL;
 diff --git a/src/network.c b/src/network.c
 index 52291b4..c4a938c 100644
 --- a/src/network.c
