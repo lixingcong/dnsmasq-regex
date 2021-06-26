@@ -6,7 +6,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/dnsmasq/src/dnsmasq",
-			"args": ["-d", "-C", "/tmp/dnsmasq_regex_example.conf"],
+			"args": ["-d", "-C", "/tmp/dnsmasq_regex_example.conf", "-q"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/dnsmasq",
 			"environment": [],

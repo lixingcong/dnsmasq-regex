@@ -1,6 +1,6 @@
 ## Dnsmasq with regex support
 
-Lastest version: v2.86test2
+Lastest version: v2.86test3
 
 patches:
 - [001-regex-server.patch](/patches/001-regex-server.patch)
@@ -70,8 +70,8 @@ You could write regex line starts with ':' and ends with ':'
 server=114.114.114.114
 server=/google.com/8.8.8.8
 server=/:myvpn[0-9]*\.company\.com:/1.1.1.1
-server=/:a[0-9]\.yyy.com:/#
-address=/:a[0-9]\.xxx.com:/127.0.0.1
+server=/:a[0-9]\.yyy\.com:/#
+address=/:a[0-9]\.xxx\.com:/127.0.0.1
 ipset=/:\.*youtube\.*:/test
 ```
 
@@ -80,17 +80,17 @@ The config above will:
 - set default upstream server to ```114.114.114.114```
 - match normal domain ```google.com``` then forward DNS queries to ```8.8.8.8```
 - match domain ```myvpn[0-9]*\.company\.com``` then forward DNS queries to ```1.1.1.1```
-- match domain ```a[0-9]\.yyy.com``` then forward DNS queries ```114.114.114.114``` normally(default upstream server)
-- match domain ```a[0-9]\.xxx.com``` then return DNS record of localhost(to block ads?)
-- add ```\.*youtube\.*``` query result to ipset ```test```
+- match domain ```a[0-9]\.yyy\.com``` then forward DNS queries ```114.114.114.114``` normally(default upstream server)
+- match domain ```a[0-9]\.xxx\.com``` then return DNS record of localhost(to block ads?)
+- add ```\.*youtube\.*``` query answers to ipset ```test```
 
 Here is a example config file: [dnsmasq\_regex\_example.conf](/dnsmasq_regex_example.conf)
 
 Tips: A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
 
-### Notes for version above v2.86
+### Notes for version >= v2.86
 
-Simon, the author of Dnsmasq, has rewritten the function to shorten the lookup time for queries. Reference: [commit](https://thekelleys.org.uk/gitweb/?p=dnsmasq.git;a=commit;h=12a9aa7c628e2d7dcd34949603848a3fb53fce9c). I have to rewrite the patch too. So the domain match function was changed.
+Simon, the author of Dnsmasq, has [rewritten](https://thekelleys.org.uk/gitweb/?p=dnsmasq.git;a=commit;h=12a9aa7c628e2d7dcd34949603848a3fb53fce9c) the function to shorten the lookup time for queries. I have to rewrite the patch too. So the domain match function was changed.
 
 If you upgrade from older version(2.85 or older), considering modify your config file. Maybe just simply move lines up and down.😉
 
@@ -103,11 +103,12 @@ server=/:\.qq\.com:/1.1.1.1
 server=/:\.qq\.com:/8.8.8.8
 ```
 
-If the non-regex server appears first, then a regex server follows. If the domain matched both servers, DNS query will be forwarded regex one, not the normal one.
+If the domain matched normal and regex servers, DNS query will be forwarded to the normal one.
 
-Consider the config file below, the domain ```wx.qq.com``` will be forwarded to upstream ```8.8.8.8```, not ```1.1.1.1```
+Consider the config file below, the domain ```wx.qq.com``` will be forwarded to upstream ```1.1.1.1```, neither ```8.8.8.8``` nor ```1.2.4.8```
 
 ```
+server=/:w\w?\.qq\.com:/1.2.4.8
 server=/qq.com/1.1.1.1
 server=/:\.qq\.com:/8.8.8.8
 ```
