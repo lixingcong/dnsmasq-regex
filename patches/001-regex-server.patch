@@ -139,22 +139,21 @@ index 939e41e..5e9230a 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index 4242d0a..15f53c7 100644
+index 4242d0a..ab3a9b4 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
-@@ -27,25 +27,50 @@ void build_server_array(void)
+@@ -27,48 +27,99 @@ void build_server_array(void)
  {
    struct server *serv;
    int count = 0;
--  
--  for (serv = daemon->servers; serv; serv = serv->next)
 +#ifdef HAVE_REGEX
 +  int regexserverarrayidx = 0;
 +  int regexlocaldomainarrayidx = 0;
-+  daemon->regexserverarraysz = 0;
-+  daemon->regexlocaldomainarraysz = 0;
++  int regexserverarraysz = 0;
++  int regexlocaldomainarraysz = 0;
 +#endif
-+
+   
+-  for (serv = daemon->servers; serv; serv = serv->next)
 +  for (serv = daemon->servers; serv; serv = serv->next){
  #ifdef HAVE_LOOP
 -    if (!(serv->flags & SERV_LOOP))
@@ -162,7 +161,7 @@ index 4242d0a..15f53c7 100644
 +#endif
 +#ifdef HAVE_REGEX
 +    if(serv->regex)
-+      ++daemon->regexserverarraysz;
++      ++regexserverarraysz;
 +    else
  #endif
        count++;
@@ -173,7 +172,7 @@ index 4242d0a..15f53c7 100644
 +  for (serv = daemon->local_domains; serv; serv = serv->next){
 +#ifdef HAVE_REGEX
 +    if(serv->regex)
-+      ++daemon->regexlocaldomainarraysz;
++      ++regexlocaldomainarraysz;
 +    else
 +#endif
      count++;
@@ -181,25 +180,32 @@ index 4242d0a..15f53c7 100644
  
    daemon->serverarraysz = count;
  
++#ifdef HAVE_REGEX
++  if (count > daemon->serverarrayhwm || (regexserverarraysz + regexlocaldomainarraysz) > (daemon->regexserverarraysz + daemon->regexlocaldomainarraysz))
++#else
    if (count > daemon->serverarrayhwm)
++#endif
      {
        struct server **new;
--
-+#ifdef HAVE_REGEX
-+      int totalcount = daemon->regexserverarraysz + daemon->regexlocaldomainarraysz;
-+#endif
+ 
        count += 10; /* A few extra without re-allocating. */
--
+ 
 +#ifdef HAVE_REGEX
-+      totalcount += count;
-+      if ((new = whine_malloc(totalcount * sizeof(struct server *))))
++      if ((new = whine_malloc((count + regexserverarraysz + regexlocaldomainarraysz) * sizeof(struct server *))))
 +#else
        if ((new = whine_malloc(count * sizeof(struct server *))))
 +#endif
  	{
  	  if (daemon->serverarray)
  	    free(daemon->serverarray);
-@@ -56,19 +81,39 @@ void build_server_array(void)
+ 	  
+ 	  daemon->serverarray = new;
+ 	  daemon->serverarrayhwm = count;
++#ifdef HAVE_REGEX
++    daemon->regexserverarraysz = regexserverarraysz;
++    daemon->regexlocaldomainarraysz = regexlocaldomainarraysz;
++#endif
+ 	}
      }
  
    count = 0;
@@ -224,13 +230,14 @@ index 4242d0a..15f53c7 100644
  	daemon->serverarray[count] = serv;
  	serv->serial = count;
  	serv->last_server = -1;
++  ++count;
        }
 -  
 -  for (serv = daemon->local_domains; serv; serv = serv->next, count++)
+-    daemon->serverarray[count] = serv;
 +    }
-+    ++count;
 +  }
-+
++  
 +  for (serv = daemon->local_domains; serv; serv = serv->next){
 +#ifdef HAVE_REGEX
 +    if(serv->regex){
@@ -238,12 +245,12 @@ index 4242d0a..15f53c7 100644
 +      continue;
 +    }else
 +#endif
-     daemon->serverarray[count] = serv;
++    daemon->serverarray[count++] = serv;
 +  }
    
    qsort(daemon->serverarray, daemon->serverarraysz, sizeof(struct server *), order_qsort);
    
-@@ -77,6 +122,11 @@ void build_server_array(void)
+@@ -77,6 +128,11 @@ void build_server_array(void)
    for (count = 0; count < daemon->serverarraysz; count++)
      if (!(daemon->serverarray[count]->flags & SERV_IS_LOCAL))
        daemon->serverarray[count]->arrayposn = count;
@@ -255,7 +262,7 @@ index 4242d0a..15f53c7 100644
  }
  
  /* we're looking for the server whose domain is the longest exact match
-@@ -99,10 +149,15 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+@@ -99,10 +155,15 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
    int try, high, low = 0;
    int nlow = 0, nhigh = 0;
    char *cp;
@@ -272,7 +279,7 @@ index 4242d0a..15f53c7 100644
    
    /* find query length and presence of '.' */
    for (cp = qdomain, nodots = 1, qlen = 0; *cp; qlen++, cp++)
-@@ -224,9 +279,27 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
+@@ -224,9 +285,27 @@ int lookup_domain(char *qdomain, int flags, int *lowout, int *highout)
      *highout = nhigh;
  
    if (nlow == nhigh)
@@ -302,7 +309,7 @@ index 4242d0a..15f53c7 100644
  }
  
  /* Return first server in group of equivalent servers; this is the "master" record. */
-@@ -239,6 +312,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -239,6 +318,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
  {
    int nlow = seed, nhigh = seed;
    int i;
@@ -317,7 +324,7 @@ index 4242d0a..15f53c7 100644
    
    /* expand nlow and nhigh to cover all the records with the same domain 
       nlow is the first, nhigh - 1 is the last. nlow=nhigh means no servers,
-@@ -312,6 +393,79 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -312,6 +399,79 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
@@ -397,7 +404,7 @@ index 4242d0a..15f53c7 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -537,12 +691,30 @@ int add_update_server(int flags,
+@@ -537,12 +697,30 @@ int add_update_server(int flags,
  {
    struct server *serv = NULL;
    char *alloc_domain;
@@ -429,7 +436,7 @@ index 4242d0a..15f53c7 100644
    /* See if there is a suitable candidate, and unmark
       only do this for forwarding servers, not 
       address or local, to avoid delays on large numbers. */
-@@ -624,6 +796,16 @@ int add_update_server(int flags,
+@@ -624,6 +802,16 @@ int add_update_server(int flags,
  	serv->source_addr = *source_addr;
      }
  
