@@ -25,10 +25,10 @@ index c82a675..c525c1c 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index ae99c72..ed56fb5 100644
+index 5e9230a..08af074 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -629,6 +629,10 @@ struct ipsets {
+@@ -630,6 +630,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,10 +40,10 @@ index ae99c72..ed56fb5 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index 1355272..a8c8e39 100644
+index 02419f4..d1a63f8 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -585,6 +585,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -597,6 +597,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -56,7 +56,7 @@ index 1355272..a8c8e39 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -594,6 +600,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -606,6 +612,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
@@ -67,10 +67,10 @@ index 1355272..a8c8e39 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index babf7d7..e02813c 100644
+index 97d49be..6566b9c 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2881,6 +2881,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2757,6 +2757,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index babf7d7..e02813c 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2893,6 +2905,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2769,6 +2781,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;

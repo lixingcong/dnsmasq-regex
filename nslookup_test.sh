@@ -7,8 +7,8 @@ DIG="dig @localhost -p30000 +retry=0"
 REDIR=/dev/null
 
 echo 'UDP, server'
-domains=("jd.com" "www.fb.me" "fb.me" "github.com" "www.github.com")
-expect_dns=("114.114.114.114" "8.8.8.8" "8.8.8.8" "8.8.8.8" "8.8.8.8")
+domains=("jd.com" "www.fb.me" "fb.me" "github.com" "www.github.com" "mail.163.com")
+expect_dns=("114.114.114.114" "8.8.8.8" "8.8.8.8" "8.8.8.8" "8.8.8.8" "223.5.5.5")
 arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}
@@ -27,8 +27,8 @@ for (( i=0; i<${arraylength}; i++ ));do
 done
 
 echo 'TCP, server'
-domains=("2.taobao.com" "api.github.com")
-expect_dns=("114.114.114.114" "8.8.8.8")
+domains=("2.taobao.com" "api.github.com" "163.com")
+expect_dns=("114.114.114.114" "8.8.8.8" "223.5.5.5")
 arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}

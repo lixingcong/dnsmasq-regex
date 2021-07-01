@@ -1,6 +1,6 @@
 ## Dnsmasq with regex support
 
-Lastest version: v2.86test3
+Lastest version: v2.86test4
 
 patches:
 - [001-regex-server.patch](/patches/001-regex-server.patch)
@@ -22,6 +22,8 @@ Offical dnsmasq:
 These packages were maintained by community. Build from source if your distribution was not in the list.
 
 ### Archlinux
+
+Package deatails: [archlinux user repo](https://aur.archlinux.org/packages/dnsmasq-regex)
 
 	yay -S dnsmasq-regex
 
