@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 0cd592e..e68953e 100644
+index 2549e7c..d54f92b 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
@@ -57,10 +57,10 @@ index 30e23d8..c82a675 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index a88cbc5..15ee5c3 100644
+index 8674823..a02102e 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -153,6 +153,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
+@@ -154,6 +154,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
  #include <priv.h>
  #endif
  
@@ -71,7 +71,7 @@ index a88cbc5..15ee5c3 100644
  /* Backwards compat with 2.83 */
  #if defined(HAVE_NETTLEHASH)
  #  define HAVE_CRYPTOHASH
-@@ -570,6 +574,10 @@ struct randfd_list {
+@@ -571,6 +575,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -82,7 +82,7 @@ index a88cbc5..15ee5c3 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -591,6 +599,10 @@ struct server {
+@@ -592,6 +600,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -93,7 +93,7 @@ index a88cbc5..15ee5c3 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -598,6 +610,10 @@ struct serv_addr4 {
+@@ -599,6 +611,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -104,7 +104,7 @@ index a88cbc5..15ee5c3 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -605,6 +621,10 @@ struct serv_addr6 {
+@@ -606,6 +622,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -115,7 +115,7 @@ index a88cbc5..15ee5c3 100644
    struct server *next;
  };
  
-@@ -1107,6 +1127,9 @@ extern struct daemon {
+@@ -1108,6 +1128,9 @@ extern struct daemon {
    struct server *servers, *local_domains, **serverarray, *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -125,7 +125,7 @@ index a88cbc5..15ee5c3 100644
    struct ipsets *ipsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1756,6 +1779,12 @@ void dump_packet(int mask, void *packet, size_t len, union mysockaddr *src, unio
+@@ -1757,6 +1780,12 @@ void dump_packet(int mask, void *packet, size_t len, union mysockaddr *src, unio
  #endif
  
  /* domain-match.c */
@@ -464,7 +464,7 @@ index f8e4796..3ee23b3 100644
  }
  
 diff --git a/src/forward.c b/src/forward.c
-index f5bd19e..b1522c8 100644
+index f8321e4..b55230b 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -279,6 +279,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,

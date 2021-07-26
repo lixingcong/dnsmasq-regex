@@ -25,10 +25,10 @@ index c82a675..c525c1c 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 15ee5c3..5d69f3f 100644
+index a02102e..5f4e9d9 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -632,6 +632,10 @@ struct ipsets {
+@@ -633,6 +633,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,7 +40,7 @@ index 15ee5c3..5d69f3f 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index b1522c8..6f06e3d 100644
+index b55230b..5889525 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -597,6 +597,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
@@ -67,10 +67,10 @@ index b1522c8..6f06e3d 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index 964c3b1..c709743 100644
+index 03feb29..5911d6f 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2773,6 +2773,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2790,6 +2790,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index 964c3b1..c709743 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2785,6 +2797,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2802,6 +2814,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
