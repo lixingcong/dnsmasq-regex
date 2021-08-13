@@ -464,12 +464,12 @@ index f8e4796..3ee23b3 100644
  }
  
 diff --git a/src/forward.c b/src/forward.c
-index f8321e4..b55230b 100644
+index 3d638e4..2f24531 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -279,6 +279,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -275,6 +275,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
        /* Configured answer. */
-       if ((flags = is_local_answer(now, first, daemon->namebuff)))
+       if (flags || ede == EDE_NOT_READY)
  	goto reply;
 +
 +#ifdef HAVE_REGEX
@@ -479,7 +479,7 @@ index f8321e4..b55230b 100644
        
        master = daemon->serverarray[first];
        
-@@ -361,10 +366,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -357,10 +362,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	{
  	  /* retry on existing query, from original source. Send to all available servers  */
  	  forward->sentto->failed_queries++;
@@ -497,7 +497,7 @@ index f8321e4..b55230b 100644
  	  master = daemon->serverarray[first];
  	  
  	  /* Forward to all available servers on retry of query from same host. */
-@@ -450,8 +460,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -446,8 +456,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
    while (1)
      { 
        int fd;
@@ -513,15 +513,26 @@ index f8321e4..b55230b 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2046,11 +2061,19 @@ unsigned char *tcp_request(int confd, time_t now,
- 		flags = F_NOERR;
- 	      else if (!lookup_domain(daemon->namebuff, gotname, &first, &last))
- 		ede = EDE_NOT_READY;  /* No configured servers */
+@@ -2034,9 +2049,17 @@ unsigned char *tcp_request(int confd, time_t now,
+ 	      struct server *master;
+ 	      int start;
+ 
+-	      if (lookup_domain(daemon->namebuff, gotname, &first, &last))
++	      if (lookup_domain(daemon->namebuff, gotname, &first, &last)){
+ 		flags = is_local_answer(now, first, daemon->namebuff);
 +#ifdef HAVE_REGEX
-+		  else if (!(flags = is_local_answer(now, first, daemon->namebuff)) && !(flags = is_local_regex_answer(daemon->namebuff, &first, &last)))
-+#else
- 	      else if (!(flags = is_local_answer(now, first, daemon->namebuff)))
++		if(!flags)
++			flags = is_local_regex_answer(daemon->namebuff, &first, &last);
 +#endif
++		  }
+ 	      else
++#ifdef HAVE_REGEX
++		if(!(flags = is_local_regex_answer(daemon->namebuff, &first, &last)))
++#endif
+ 		{
+ 		  /* No configured servers */
+ 		  ede = EDE_NOT_READY;
+@@ -2055,7 +2078,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
@@ -533,17 +544,8 @@ index f8321e4..b55230b 100644
  		    start = first;
  		  else
  		    start = master->last_server;
-@@ -2137,7 +2160,7 @@ unsigned char *tcp_request(int confd, time_t now,
- 		}
- 	    }
- 	}
--      
-+
-       /* In case of local answer or no connections made. */
-       if (m == 0)
- 	{
 diff --git a/src/network.c b/src/network.c
-index 3ef71b9..aa2f530 100644
+index 3fc179d..460ca41 100644
 --- a/src/network.c
 +++ b/src/network.c
 @@ -1601,6 +1601,10 @@ void check_servers(int no_loop_check)

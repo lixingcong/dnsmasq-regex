@@ -40,10 +40,10 @@ index a02102e..5f4e9d9 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index b55230b..5889525 100644
+index 2f24531..00c9c83 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -597,6 +597,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -593,6 +593,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
        unsigned int matchlen = 0;
        for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
  	{
@@ -56,7 +56,7 @@ index b55230b..5889525 100644
  	  unsigned int domainlen = strlen(ipset_pos->domain);
  	  char *matchstart = daemon->namebuff + namelen - domainlen;
  	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -606,6 +612,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
+@@ -602,6 +608,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
  	      matchlen = domainlen;
  	      sets = ipset_pos->sets;
  	    }
@@ -67,7 +67,7 @@ index b55230b..5889525 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index 03feb29..5911d6f 100644
+index 3a87097..9b86272 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2790,6 +2790,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
