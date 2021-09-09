@@ -67,10 +67,10 @@ index 2f24531..00c9c83 100644
      }
  #endif
 diff --git a/src/option.c b/src/option.c
-index 3a87097..9b86272 100644
+index ffce9fc..6b11afd 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2790,6 +2790,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2791,6 +2791,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index 3a87097..9b86272 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2802,6 +2814,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2803,6 +2815,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
