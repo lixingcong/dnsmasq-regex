@@ -1,16 +1,16 @@
 diff --git a/src/config.h b/src/config.h
-index c82a675..c525c1c 100644
+index 5129fa3..ac66fae 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -193,6 +193,7 @@ RESOLVFILE
- /* #define HAVE_CRYPTOHASH */
+@@ -198,6 +198,7 @@ RESOLVFILE
  /* #define HAVE_DNSSEC */
+ /* #define HAVE_NFTSET */
  /* #define HAVE_REGEX */
 +/* #define HAVE_REGEX_IPSET */
  
- 
  /* Default locations for important system files. */
-@@ -386,7 +387,12 @@ static char *compile_opts =
+ 
+@@ -390,7 +391,12 @@ static char *compile_opts =
  #ifndef HAVE_REGEX
  "no-"
  #endif
@@ -25,10 +25,10 @@ index c82a675..c525c1c 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index a02102e..5f4e9d9 100644
+index 104a66e..5d531b4 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -633,6 +633,10 @@ struct ipsets {
+@@ -638,6 +638,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,37 +40,37 @@ index a02102e..5f4e9d9 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index 2f24531..00c9c83 100644
+index d026238..56d0110 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -593,6 +593,12 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
-       unsigned int matchlen = 0;
-       for (ipset_pos = daemon->ipsets; ipset_pos; ipset_pos = ipset_pos->next) 
- 	{
+@@ -593,6 +593,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+   unsigned int matchlen = 0;
+   for (ipset_pos = setlist; ipset_pos; ipset_pos = ipset_pos->next) 
+     {
 +#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
 +	if (ipset_pos->regex){
 +		if (match_regex(ipset_pos->regex, ipset_pos->pextra, daemon->namebuff, namelen))
-+			sets = ipset_pos->sets;
++			 ret = ipset_pos;
 +	}else{
 +#endif
- 	  unsigned int domainlen = strlen(ipset_pos->domain);
- 	  char *matchstart = daemon->namebuff + namelen - domainlen;
- 	  if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -602,6 +608,9 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
- 	      matchlen = domainlen;
- 	      sets = ipset_pos->sets;
- 	    }
+       unsigned int domainlen = strlen(ipset_pos->domain);
+       const char *matchstart = domain + namelen - domainlen;
+       if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
+@@ -602,6 +608,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+           matchlen = domainlen;
+           ret = ipset_pos;
+         }
 +#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
 +	}
 +#endif
- 	}
      }
- #endif
+ 
+   return ret;
 diff --git a/src/option.c b/src/option.c
-index ffce9fc..6b11afd 100644
+index 4e533be..1a4a863 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2791,6 +2791,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2885,6 +2885,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index ffce9fc..6b11afd 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2803,6 +2815,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2897,6 +2909,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
