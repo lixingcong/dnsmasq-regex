@@ -464,7 +464,7 @@ index f8e4796..3ee23b3 100644
  }
  
 diff --git a/src/forward.c b/src/forward.c
-index 3d638e4..2f24531 100644
+index 3d638e4..9f669a3 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -275,6 +275,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -479,7 +479,17 @@ index 3d638e4..2f24531 100644
        
        master = daemon->serverarray[first];
        
-@@ -357,10 +362,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -320,6 +325,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+ 	      forward->forwardall = 1;
+ 	    }
+ 	  else
++#ifdef HAVE_REGEX
++		if(!master->regex)
++#endif
+ 	    start = master->last_server;
+ 	}
+     }
+@@ -357,10 +365,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	{
  	  /* retry on existing query, from original source. Send to all available servers  */
  	  forward->sentto->failed_queries++;
@@ -497,7 +507,7 @@ index 3d638e4..2f24531 100644
  	  master = daemon->serverarray[first];
  	  
  	  /* Forward to all available servers on retry of query from same host. */
-@@ -446,8 +456,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -446,8 +459,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
    while (1)
      { 
        int fd;
@@ -513,7 +523,7 @@ index 3d638e4..2f24531 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2034,9 +2049,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2034,9 +2052,17 @@ unsigned char *tcp_request(int confd, time_t now,
  	      struct server *master;
  	      int start;
  
@@ -532,7 +542,7 @@ index 3d638e4..2f24531 100644
  		{
  		  /* No configured servers */
  		  ede = EDE_NOT_READY;
-@@ -2055,7 +2078,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2055,7 +2081,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
