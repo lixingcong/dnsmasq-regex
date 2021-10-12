@@ -6,6 +6,14 @@
 DIG="dig @localhost -p30000 +retry=0"
 REDIR=/dev/null
 
+trap "exit" INT
+
+function printExit()
+{
+	echo "Failed, exited"
+	exit 1
+}
+
 echo 'UDP, server'
 domains=("jd.com" "www.fb.me" "fb.me" "github.com" "www.github.com" "mail.163.com")
 expect_dns=("114.114.114.114" "8.8.8.8" "8.8.8.8" "8.8.8.8" "8.8.8.8" "223.5.5.5")
@@ -13,7 +21,7 @@ arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}
 	echo "  $domain is forwared to ${expect_dns[$i]}"
-	$DIG $domain > $REDIR
+	$DIG $domain > $REDIR || printExit
 done
 
 echo 'UDP, local'
@@ -23,7 +31,7 @@ arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}
 	echo "  $domain is forwared to ${expect_dns[$i]}"
-	$DIG $domain > $REDIR
+	$DIG $domain > $REDIR || printExit
 done
 
 echo 'TCP, server'
@@ -33,7 +41,7 @@ arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}
 	echo "  $domain is forwared to ${expect_dns[$i]}"
-	$DIG $domain +tcp > $REDIR
+	$DIG $domain +tcp > $REDIR || printExit
 done
 
 echo 'TCP, local'
@@ -43,5 +51,5 @@ arraylength=${#domains[@]}
 for (( i=0; i<${arraylength}; i++ ));do
 	domain=${domains[$i]}
 	echo "  $domain is forwared to ${expect_dns[$i]}"
-	$DIG $domain +tcp > $REDIR
+	$DIG $domain +tcp > $REDIR || printExit
 done
