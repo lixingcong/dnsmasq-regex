@@ -25,10 +25,10 @@ index 5129fa3..ac66fae 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 104a66e..5d531b4 100644
+index 76585bc..29bda89 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -638,6 +638,10 @@ struct ipsets {
+@@ -640,6 +640,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,7 +40,7 @@ index 104a66e..5d531b4 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index d026238..56d0110 100644
+index f2b2856..5eb2bc5 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -593,6 +593,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
@@ -67,7 +67,7 @@ index d026238..56d0110 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index 4e533be..1a4a863 100644
+index ac2ba20..e14ec27 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -2885,6 +2885,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
