@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 3e110e4..0ec6a75 100644
+index d06ccc1..725401b 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
@@ -34,7 +34,7 @@ index 3e110e4..0ec6a75 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 2bb6683..5129fa3 100644
+index 227fb1f..489e59b 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -197,6 +197,7 @@ RESOLVFILE
@@ -57,7 +57,7 @@ index 2bb6683..5129fa3 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index bf7685d..76585bc 100644
+index 1b00298..1426e10 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -154,6 +154,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -115,7 +115,7 @@ index bf7685d..76585bc 100644
    struct server *next;
  };
  
-@@ -1116,6 +1136,9 @@ extern struct daemon {
+@@ -1124,6 +1144,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -125,7 +125,7 @@ index bf7685d..76585bc 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1777,6 +1800,12 @@ void dump_packet(int mask, void *packet, size_t len, union mysockaddr *src, unio
+@@ -1797,6 +1820,12 @@ void dump_packet(int mask, void *packet, size_t len, union mysockaddr *src, unio
  #endif
  
  /* domain-match.c */
@@ -139,7 +139,7 @@ index bf7685d..76585bc 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index 6f59566..0792350 100644
+index 4e01092..74ff4c5 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -27,47 +27,88 @@ void build_server_array(void)
@@ -240,12 +240,11 @@ index 6f59566..0792350 100644
  	serv->last_server = -1;
  	count++;
        }
--  
--  for (serv = daemon->local_domains; serv; serv = serv->next, count++)
--    daemon->serverarray[count] = serv;
 +    }
 +  }
-+  
+   
+-  for (serv = daemon->local_domains; serv; serv = serv->next, count++)
+-    daemon->serverarray[count] = serv;
 +  for (serv = daemon->local_domains; serv; serv = serv->next){
 +#ifdef HAVE_REGEX
 +    if(serv->regex){
@@ -416,7 +415,7 @@ index 6f59566..0792350 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -603,6 +762,9 @@ int add_update_server(int flags,
+@@ -607,6 +766,9 @@ int add_update_server(int flags,
  		      const char *domain,
  		      union all_addr *local_addr)
  {
@@ -426,7 +425,7 @@ index 6f59566..0792350 100644
    struct server *serv = NULL;
    char *alloc_domain;
    
-@@ -618,7 +780,18 @@ int add_update_server(int flags,
+@@ -622,7 +784,18 @@ int add_update_server(int flags,
        if (*domain != 0)
  	flags |= SERV_WILDCARD;
      }
@@ -446,7 +445,7 @@ index 6f59566..0792350 100644
    if (*domain == 0)
      alloc_domain = whine_malloc(1);
    else
-@@ -701,6 +874,16 @@ int add_update_server(int flags,
+@@ -720,6 +893,16 @@ int add_update_server(int flags,
    serv->flags = flags;
    serv->domain = alloc_domain;
    serv->domain_len = strlen(alloc_domain);
@@ -464,10 +463,10 @@ index 6f59566..0792350 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 04635b3..f2b2856 100644
+index 8d8b8fe..cfe3c77 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -279,6 +279,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -312,6 +312,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
        /* Configured answer. */
        if (flags || ede == EDE_NOT_READY)
  	goto reply;
@@ -479,7 +478,7 @@ index 04635b3..f2b2856 100644
        
        master = daemon->serverarray[first];
        
-@@ -324,6 +329,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -358,6 +363,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	      forward->forwardall = 1;
  	    }
  	  else
@@ -489,7 +488,7 @@ index 04635b3..f2b2856 100644
  	    start = master->last_server;
  	}
      }
-@@ -361,10 +369,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -397,10 +405,15 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
  	{
  	  /* retry on existing query, from original source. Send to all available servers  */
  	  forward->sentto->failed_queries++;
@@ -507,7 +506,7 @@ index 04635b3..f2b2856 100644
  	  master = daemon->serverarray[first];
  	  
  	  /* Forward to all available servers on retry of query from same host. */
-@@ -459,8 +472,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -492,8 +505,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
    while (1)
      { 
        int fd;
@@ -523,7 +522,7 @@ index 04635b3..f2b2856 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2063,9 +2081,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2120,9 +2138,17 @@ unsigned char *tcp_request(int confd, time_t now,
  	      struct server *master;
  	      int start;
  
@@ -542,7 +541,7 @@ index 04635b3..f2b2856 100644
  		{
  		  /* No configured servers */
  		  ede = EDE_NOT_READY;
-@@ -2084,7 +2110,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2141,7 +2167,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  

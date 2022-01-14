@@ -1,5 +1,5 @@
 diff --git a/src/config.h b/src/config.h
-index 5129fa3..ac66fae 100644
+index 489e59b..e83af8f 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -198,6 +198,7 @@ RESOLVFILE
@@ -25,7 +25,7 @@ index 5129fa3..ac66fae 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 76585bc..29bda89 100644
+index 1426e10..73aed79 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -640,6 +640,10 @@ struct ipsets {
@@ -40,10 +40,10 @@ index 76585bc..29bda89 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index f2b2856..5eb2bc5 100644
+index cfe3c77..9b815ab 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -593,6 +593,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -626,6 +626,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
    unsigned int matchlen = 0;
    for (ipset_pos = setlist; ipset_pos; ipset_pos = ipset_pos->next) 
      {
@@ -56,7 +56,7 @@ index f2b2856..5eb2bc5 100644
        unsigned int domainlen = strlen(ipset_pos->domain);
        const char *matchstart = domain + namelen - domainlen;
        if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -602,6 +608,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -635,6 +641,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
            matchlen = domainlen;
            ret = ipset_pos;
          }
@@ -67,10 +67,10 @@ index f2b2856..5eb2bc5 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index ac2ba20..e14ec27 100644
+index 7134ee7..f665c91 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2885,6 +2885,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2894,6 +2894,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index ac2ba20..e14ec27 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2897,6 +2909,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2906,6 +2918,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
