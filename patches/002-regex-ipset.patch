@@ -1,5 +1,5 @@
 diff --git a/src/config.h b/src/config.h
-index 489e59b..e83af8f 100644
+index d5e540b..4ed6a28 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -198,6 +198,7 @@ RESOLVFILE
@@ -25,10 +25,10 @@ index 489e59b..e83af8f 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 1426e10..73aed79 100644
+index a29da68..97cf911 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -640,6 +640,10 @@ struct ipsets {
+@@ -642,6 +642,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,10 +40,10 @@ index 1426e10..73aed79 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index cfe3c77..9b815ab 100644
+index dab754b..a4b303c 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -626,6 +626,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -609,6 +609,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
    unsigned int matchlen = 0;
    for (ipset_pos = setlist; ipset_pos; ipset_pos = ipset_pos->next) 
      {
@@ -56,7 +56,7 @@ index cfe3c77..9b815ab 100644
        unsigned int domainlen = strlen(ipset_pos->domain);
        const char *matchstart = domain + namelen - domainlen;
        if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -635,6 +641,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -618,6 +624,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
            matchlen = domainlen;
            ret = ipset_pos;
          }
@@ -67,10 +67,10 @@ index cfe3c77..9b815ab 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index 7134ee7..f665c91 100644
+index c5e8cb4..a4a278e 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -2894,6 +2894,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2921,6 +2921,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index 7134ee7..f665c91 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -2906,6 +2918,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -2933,6 +2945,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
