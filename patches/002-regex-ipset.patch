@@ -25,7 +25,7 @@ index d5e540b..4ed6a28 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index a29da68..97cf911 100644
+index 0dbce8b..3bec53d 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -642,6 +642,10 @@ struct ipsets {
@@ -40,10 +40,10 @@ index a29da68..97cf911 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index dab754b..a4b303c 100644
+index a0245b8..004283c 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -609,6 +609,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -617,6 +617,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
    unsigned int matchlen = 0;
    for (ipset_pos = setlist; ipset_pos; ipset_pos = ipset_pos->next) 
      {
@@ -56,7 +56,7 @@ index dab754b..a4b303c 100644
        unsigned int domainlen = strlen(ipset_pos->domain);
        const char *matchstart = domain + namelen - domainlen;
        if (namelen >= domainlen && hostname_isequal(matchstart, ipset_pos->domain) &&
-@@ -618,6 +624,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
+@@ -626,6 +632,9 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
            matchlen = domainlen;
            ret = ipset_pos;
          }
