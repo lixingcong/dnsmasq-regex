@@ -1,8 +1,8 @@
 diff --git a/src/config.h b/src/config.h
-index 24ffe68..0857ff3 100644
+index 510336f..f367e4a 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -200,6 +200,7 @@ RESOLVFILE
+@@ -201,6 +201,7 @@ RESOLVFILE
  /* #define HAVE_DNSSEC */
  /* #define HAVE_NFTSET */
  /* #define HAVE_REGEX */
@@ -10,7 +10,7 @@ index 24ffe68..0857ff3 100644
  
  /* Default locations for important system files. */
  
-@@ -392,7 +393,12 @@ static char *compile_opts =
+@@ -393,7 +394,12 @@ static char *compile_opts =
  #ifndef HAVE_REGEX
  "no-"
  #endif
@@ -25,10 +25,10 @@ index 24ffe68..0857ff3 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index b150b05..f1d7640 100644
+index 1f1228c..d897c3d 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -647,6 +647,10 @@ struct ipsets {
+@@ -646,6 +646,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,7 +40,7 @@ index b150b05..f1d7640 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index 534ae2d..c1c3d0c 100644
+index 1c3614b..092c13c 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -687,6 +687,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
@@ -67,7 +67,7 @@ index 534ae2d..c1c3d0c 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index 371a32d..0fe2141 100644
+index 8e61a6b..2745132 100644
 --- a/src/option.c
 +++ b/src/option.c
 @@ -3135,6 +3135,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma

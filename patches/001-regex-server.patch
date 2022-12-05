@@ -34,10 +34,10 @@ index 48e8d3b..7066107 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index df1d985..24ffe68 100644
+index 1e7b30f..510336f 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -199,6 +199,7 @@ RESOLVFILE
+@@ -200,6 +200,7 @@ RESOLVFILE
  /* #define HAVE_CRYPTOHASH */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_NFTSET */
@@ -45,7 +45,7 @@ index df1d985..24ffe68 100644
  
  /* Default locations for important system files. */
  
-@@ -388,6 +389,10 @@ static char *compile_opts =
+@@ -389,6 +390,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -57,7 +57,7 @@ index df1d985..24ffe68 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 90dc986..b150b05 100644
+index aaa6d62..1f1228c 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -155,6 +155,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -71,7 +71,7 @@ index 90dc986..b150b05 100644
  /* Backwards compat with 2.83 */
  #if defined(HAVE_NETTLEHASH)
  #  define HAVE_CRYPTOHASH
-@@ -579,6 +583,10 @@ struct randfd_list {
+@@ -578,6 +582,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -82,7 +82,7 @@ index 90dc986..b150b05 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -601,6 +609,10 @@ struct server {
+@@ -600,6 +608,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -93,7 +93,7 @@ index 90dc986..b150b05 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -608,6 +620,10 @@ struct serv_addr4 {
+@@ -607,6 +619,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -104,7 +104,7 @@ index 90dc986..b150b05 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -615,6 +631,10 @@ struct serv_addr6 {
+@@ -614,6 +630,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -115,7 +115,7 @@ index 90dc986..b150b05 100644
    struct server *next;
  };
  
-@@ -1147,6 +1167,9 @@ extern struct daemon {
+@@ -1146,6 +1166,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -139,7 +139,7 @@ index 90dc986..b150b05 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index bef460a..1965268 100644
+index fe8e25a..86849ff 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -27,47 +27,88 @@ void build_server_array(void)
@@ -449,7 +449,7 @@ index bef460a..1965268 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -623,6 +816,9 @@ int add_update_server(int flags,
+@@ -625,6 +818,9 @@ int add_update_server(int flags,
  		      const char *domain,
  		      union all_addr *local_addr)
  {
@@ -459,7 +459,7 @@ index bef460a..1965268 100644
    struct server *serv = NULL;
    char *alloc_domain;
    
-@@ -638,7 +834,18 @@ int add_update_server(int flags,
+@@ -640,7 +836,18 @@ int add_update_server(int flags,
        if (*domain != 0)
  	flags |= SERV_WILDCARD;
      }
@@ -479,7 +479,7 @@ index bef460a..1965268 100644
    if (*domain == 0)
      alloc_domain = whine_malloc(1);
    else
-@@ -741,6 +948,16 @@ int add_update_server(int flags,
+@@ -743,6 +950,16 @@ int add_update_server(int flags,
    serv->flags = flags;
    serv->domain = alloc_domain;
    serv->domain_len = strlen(alloc_domain);
@@ -497,7 +497,7 @@ index bef460a..1965268 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index b4e3c5a..dccab92 100644
+index 0f03818..1c3614b 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -306,6 +306,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -554,7 +554,7 @@ index b4e3c5a..dccab92 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2292,9 +2312,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2302,9 +2322,17 @@ unsigned char *tcp_request(int confd, time_t now,
  	      struct server *master;
  	      int start;
  
@@ -573,7 +573,7 @@ index b4e3c5a..dccab92 100644
  		{
  		  /* No configured servers */
  		  ede = EDE_NOT_READY;
-@@ -2313,7 +2341,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2323,7 +2351,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
