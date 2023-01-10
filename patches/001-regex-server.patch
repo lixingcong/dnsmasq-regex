@@ -1,8 +1,20 @@
 diff --git a/Makefile b/Makefile
-index 48e8d3b..7066107 100644
+index 48e8d3b..1da60cb 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -69,6 +69,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
+@@ -24,7 +24,11 @@ MANDIR        = $(PREFIX)/share/man
+ LOCALEDIR     = $(PREFIX)/share/locale
+ BUILDDIR      = $(SRC)
+ DESTDIR       = 
++ifndef BUILD_DEBUG
+ CFLAGS        = -Wall -W -O2
++else
++CFLAGS        = -Wall -W -g
++endif
+ LDFLAGS       = 
+ COPTS         = 
+ RPM_OPT_FLAGS = 
+@@ -69,6 +73,8 @@ nettle_libs =   `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC     $(PKG_CO
                                                          HAVE_CRYPTOHASH $(PKG_CONFIG) --libs nettle \
                                                          HAVE_NETTLEHASH $(PKG_CONFIG) --libs nettle`
  gmp_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_DNSSEC NO_GMP --copy -lgmp`
@@ -11,7 +23,7 @@ index 48e8d3b..7066107 100644
  sunos_libs =    `if uname | grep SunOS >/dev/null 2>&1; then echo -lsocket -lnsl -lposix4; fi`
  nft_cflags =    `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_NFTSET $(PKG_CONFIG) --cflags libnftables` 
  nft_libs =      `echo $(COPTS) | $(top)/bld/pkg-wrapper HAVE_NFTSET $(PKG_CONFIG) --libs libnftables`
-@@ -92,8 +94,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
+@@ -92,8 +98,8 @@ hdrs = dnsmasq.h config.h dhcp-protocol.h dhcp6-protocol.h \
  all : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
@@ -22,7 +34,7 @@ index 48e8d3b..7066107 100644
   -f $(top)/Makefile dnsmasq 
  
  mostly_clean :
-@@ -117,8 +119,8 @@ all-i18n : $(BUILDDIR)
+@@ -117,8 +123,8 @@ all-i18n : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
   i18n=-DLOCALEDIR=\'\"$(LOCALEDIR)\"\' \
