@@ -69,7 +69,7 @@ index 1e7b30f..510336f 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index aaa6d62..1f1228c 100644
+index fe9aa07..373bca9 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -155,6 +155,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -83,7 +83,7 @@ index aaa6d62..1f1228c 100644
  /* Backwards compat with 2.83 */
  #if defined(HAVE_NETTLEHASH)
  #  define HAVE_CRYPTOHASH
-@@ -578,6 +582,10 @@ struct randfd_list {
+@@ -579,6 +583,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -94,7 +94,7 @@ index aaa6d62..1f1228c 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -600,6 +608,10 @@ struct server {
+@@ -601,6 +609,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -105,7 +105,7 @@ index aaa6d62..1f1228c 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -607,6 +619,10 @@ struct serv_addr4 {
+@@ -608,6 +620,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -116,7 +116,7 @@ index aaa6d62..1f1228c 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -614,6 +630,10 @@ struct serv_addr6 {
+@@ -615,6 +631,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -127,7 +127,7 @@ index aaa6d62..1f1228c 100644
    struct server *next;
  };
  
-@@ -1146,6 +1166,9 @@ extern struct daemon {
+@@ -1147,6 +1167,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -137,7 +137,7 @@ index aaa6d62..1f1228c 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1842,6 +1865,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1843,6 +1866,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */

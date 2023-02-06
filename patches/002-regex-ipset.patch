@@ -25,10 +25,10 @@ index 510336f..f367e4a 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 1f1228c..d897c3d 100644
+index 373bca9..97a3dc1 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -646,6 +646,10 @@ struct ipsets {
+@@ -647,6 +647,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -67,10 +67,10 @@ index 1c3614b..092c13c 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index 8e61a6b..2745132 100644
+index e4810fd..86c98bd 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -3135,6 +3135,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3138,6 +3138,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index 8e61a6b..2745132 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -3147,6 +3159,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3150,6 +3162,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
