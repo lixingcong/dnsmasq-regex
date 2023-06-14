@@ -12,6 +12,7 @@
 			"environment": [],
 			"externalConsole": false,
 			"MIMode": "gdb",
+			"miDebuggerPath" : "${workspaceFolder}/test/gdb-vscode-root",
 			"preLaunchTask":"Compile",
 			"setupCommands": [
 				{

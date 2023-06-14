@@ -4,7 +4,7 @@
 		{
 			"label": "Compile",
 			"type": "shell",
-			"command": "make submodule",
+			"command": "make submodule -j8 BUILD_DEBUG=1",
 			"problemMatcher": [],
 			"group": {
 				"kind": "build",
