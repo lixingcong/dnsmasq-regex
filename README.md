@@ -32,8 +32,8 @@ Package deatails: [archlinux user repo](https://aur.archlinux.org/packages/dnsma
 For Debian/Ubuntu:
 
 ```
-# Install libpcre3 and pkg-config
-sudo apt install libpcre3-dev pkg-config
+# Install the dependencies
+sudo apt install -y libpcre3-dev libnftables-dev pkg-config
 
 # Clone the repo
 git clone https://github.com/lixingcong/dnsmasq-regex
@@ -46,11 +46,11 @@ bash ./update_submodule.sh
 # build it
 make
 
-# Run the binary, check if the compile option contains "regex(+ipset)"
+# Run the binary, check if the compile option contains "regex(+ipset,nftset)"
 ./dnsmasq/src/dnsmasq --version
 ```
 
-*Tips:* If you do not need the patch of regex_ipset, just edit the file "Makefile" and build from source again.
+*Tips:* If you do not need the patch of ipset/nftables, just edit the file "Makefile" and build from source again.
 
 Change this line
 
@@ -74,7 +74,8 @@ server=/google.com/8.8.8.8
 server=/:myvpn[0-9]*\.company\.com:/1.1.1.1
 server=/:a[0-9]\.yyy\.com:/#
 address=/:a[0-9]\.xxx\.com:/127.0.0.1
-ipset=/:\.*youtube\.*:/test
+ipset=/:.*youtube.*:/test
+nftset=/:.*\.google.co.*:/ip#dnsmasq-table#google-ipset
 ```
 
 The config above will:
@@ -84,11 +85,16 @@ The config above will:
 - match domain ```myvpn[0-9]*\.company\.com``` then forward DNS queries to ```1.1.1.1```
 - match domain ```a[0-9]\.yyy\.com``` then forward DNS queries ```114.114.114.114``` normally(default upstream server)
 - match domain ```a[0-9]\.xxx\.com``` then return DNS record of localhost(to block ads?)
-- add ```\.*youtube\.*``` query answers to ipset ```test```
+- add ```.*youtube.*``` query answers to ipset ```test```
+- add ```.*\.google.co.*``` query answers to nftables set, equivalent to ```nft add element ip dnsmasq-table google-ipset { 172.217.161.74 }```
 
 Here is a example config file: [dnsmasq\_regex\_example.conf](/dnsmasq_regex_example.conf)
 
-Tips: A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
+Tips:
+
+- A simple script to generate domains configurations: [my-gfwlist](https://github.com/lixingcong/my-gfwlist)
+
+- The regex line ```[a-z]*gle\.com``` will match both ```google.com``` and ```google.com.hk```. Use anchor ```^``` and ```$``` to produce a more precise match.
 
 ### Notes for version >= v2.86
 

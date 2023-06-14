@@ -1,5 +1,5 @@
 diff --git a/src/config.h b/src/config.h
-index 510336f..f367e4a 100644
+index 067da29..dee90b5 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -201,6 +201,7 @@ RESOLVFILE
@@ -16,8 +16,8 @@ index 510336f..f367e4a 100644
  #endif
 -"regex "
 +"regex"
-+#if defined(HAVE_IPSET) && defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET)
-+"(+ipset) "
++#if defined(HAVE_REGEX) && defined(HAVE_REGEX_IPSET) && (defined(HAVE_IPSET) || defined(HAVE_NFTSET))
++"(+ipset,nftset) "
 +#else
 +" "
 +#endif
@@ -25,10 +25,10 @@ index 510336f..f367e4a 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 373bca9..97a3dc1 100644
+index 9adbf89..5ed8ab9 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
-@@ -647,6 +647,10 @@ struct ipsets {
+@@ -657,6 +657,10 @@ struct ipsets {
    char **sets;
    char *domain;
    struct ipsets *next;
@@ -40,7 +40,7 @@ index 373bca9..97a3dc1 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index 1c3614b..092c13c 100644
+index a6f3dfa..3dd5c85 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -687,6 +687,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
@@ -67,10 +67,10 @@ index 1c3614b..092c13c 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index e4810fd..86c98bd 100644
+index 8322725..d20fee8 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -3138,6 +3138,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3166,6 +3166,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index e4810fd..86c98bd 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -3150,6 +3162,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3178,6 +3190,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;

@@ -46,7 +46,7 @@ index 48e8d3b..1da60cb 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 1e7b30f..510336f 100644
+index 88cf72e..067da29 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -200,6 +200,7 @@ RESOLVFILE
@@ -69,7 +69,7 @@ index 1e7b30f..510336f 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index fe9aa07..373bca9 100644
+index 2f95c12..9adbf89 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -155,6 +155,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -83,7 +83,7 @@ index fe9aa07..373bca9 100644
  /* Backwards compat with 2.83 */
  #if defined(HAVE_NETTLEHASH)
  #  define HAVE_CRYPTOHASH
-@@ -579,6 +583,10 @@ struct randfd_list {
+@@ -589,6 +593,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -94,7 +94,7 @@ index fe9aa07..373bca9 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -601,6 +609,10 @@ struct server {
+@@ -611,6 +619,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -105,7 +105,7 @@ index fe9aa07..373bca9 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -608,6 +620,10 @@ struct serv_addr4 {
+@@ -618,6 +630,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -116,7 +116,7 @@ index fe9aa07..373bca9 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -615,6 +631,10 @@ struct serv_addr6 {
+@@ -625,6 +641,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -127,7 +127,7 @@ index fe9aa07..373bca9 100644
    struct server *next;
  };
  
-@@ -1147,6 +1167,9 @@ extern struct daemon {
+@@ -1168,6 +1188,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -137,7 +137,7 @@ index fe9aa07..373bca9 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1843,6 +1866,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1870,6 +1893,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */
@@ -151,7 +151,7 @@ index fe9aa07..373bca9 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index fe8e25a..86849ff 100644
+index 2393f38..1db5cc6 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -27,47 +27,88 @@ void build_server_array(void)
@@ -252,11 +252,12 @@ index fe8e25a..86849ff 100644
  	serv->last_server = -1;
  	count++;
        }
-+    }
-+  }
-   
+-  
 -  for (serv = daemon->local_domains; serv; serv = serv->next, count++)
 -    daemon->serverarray[count] = serv;
++    }
++  }
++  
 +  for (serv = daemon->local_domains; serv; serv = serv->next){
 +#ifdef HAVE_REGEX
 +    if(serv->regex){
@@ -311,14 +312,15 @@ index fe8e25a..86849ff 100644
    
    /* find query length and presence of '.' */
    for (cp = qdomain, nodots = 1, qlen = 0; *cp; qlen++, cp++)
-@@ -254,9 +323,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
-     *highout = nhigh;
+@@ -255,9 +324,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  
-   if (nlow == nhigh)
+   /* qlen == -1 when we failed to match even an empty query, if there are no default servers. */
+   if (nlow == nhigh || qlen == -1)
 -    return 0;
-+    goto search_regex;
- 
+-  
 -  return 1;
++    goto search_regex;
++
 +  founddomain = 1;
 +
 +search_regex:
@@ -356,7 +358,7 @@ index fe8e25a..86849ff 100644
  }
  
  /* Return first server in group of equivalent servers; this is the "master" record. */
-@@ -269,6 +371,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -270,6 +372,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
  {
    int nlow = seed, nhigh = seed;
    int i;
@@ -371,7 +373,7 @@ index fe8e25a..86849ff 100644
    
    /* expand nlow and nhigh to cover all the records with the same domain 
       nlow is the first, nhigh - 1 is the last. nlow=nhigh means no servers,
-@@ -365,6 +475,89 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -366,6 +476,89 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
@@ -461,7 +463,17 @@ index fe8e25a..86849ff 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -625,6 +818,9 @@ int add_update_server(int flags,
+@@ -505,6 +698,9 @@ static int order(char *qdomain, size_t qlen, struct server *serv)
+ static int order_servers(struct server *s1, struct server *s2)
+ {
+   int rc;
++#ifdef HAVE_REGEX
++  if(!s1) return -1;
++#endif
+ 
+   /* need full comparison of dotless servers in 
+      order_qsort() and filter_servers() */
+@@ -626,6 +822,9 @@ int add_update_server(int flags,
  		      const char *domain,
  		      union all_addr *local_addr)
  {
@@ -471,7 +483,7 @@ index fe8e25a..86849ff 100644
    struct server *serv = NULL;
    char *alloc_domain;
    
-@@ -640,7 +836,18 @@ int add_update_server(int flags,
+@@ -641,10 +840,32 @@ int add_update_server(int flags,
        if (*domain != 0)
  	flags |= SERV_WILDCARD;
      }
@@ -481,9 +493,17 @@ index fe8e25a..86849ff 100644
 +    size_t domainLen=strlen(domain);
 +    char* regex_end=(char*)domain+domainLen-1;
 +    if (domainLen > 2 && *domain == ':' && *regex_end == ':'){
++      const char* err = NULL;
++
 +      ++domain; // skip leading ':'
++      --domainLen; // skip leading ':'
++
 +      *regex_end = '\0'; // skip tailing ':'
 +      regex = domain;
++
++      // call whine_malloc() instead of canonicalise()
++      if ((alloc_domain = whine_malloc(domainLen)))
++        memcpy(alloc_domain, domain, domainLen);
 +    }
 +  }
 +#endif
@@ -491,7 +511,13 @@ index fe8e25a..86849ff 100644
    if (*domain == 0)
      alloc_domain = whine_malloc(1);
    else
-@@ -743,6 +950,16 @@ int add_update_server(int flags,
++#ifdef HAVE_REGEX
++  if(!regex)
++#endif
+     alloc_domain = canonicalise((char *)domain, NULL);
+ 
+   if (!alloc_domain)
+@@ -744,6 +965,16 @@ int add_update_server(int flags,
    serv->flags = flags;
    serv->domain = alloc_domain;
    serv->domain_len = strlen(alloc_domain);
@@ -509,7 +535,7 @@ index fe8e25a..86849ff 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 0f03818..1c3614b 100644
+index 95213c5..bea138b 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -306,6 +306,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -566,7 +592,7 @@ index 0f03818..1c3614b 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2302,9 +2322,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2325,9 +2345,17 @@ unsigned char *tcp_request(int confd, time_t now,
  	      struct server *master;
  	      int start;
  
@@ -585,7 +611,7 @@ index 0f03818..1c3614b 100644
  		{
  		  /* No configured servers */
  		  ede = EDE_NOT_READY;
-@@ -2323,7 +2351,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2346,7 +2374,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
@@ -598,10 +624,10 @@ index 0f03818..1c3614b 100644
  		  else
  		    start = master->last_server;
 diff --git a/src/network.c b/src/network.c
-index 1e41a78..6065d36 100644
+index ca9fada..89ac06c 100644
 --- a/src/network.c
 +++ b/src/network.c
-@@ -1657,6 +1657,10 @@ void check_servers(int no_loop_check)
+@@ -1662,6 +1662,10 @@ void check_servers(int no_loop_check)
  	    s1 = _("unqualified"), s2 = _("names");
  	  else if (strlen(serv->domain) == 0)
  	    s1 = _("default"), s2 = "";
@@ -612,7 +638,7 @@ index 1e41a78..6065d36 100644
  	  else
  	    s1 = _("domain"), s2 = serv->domain, s4 = (serv->flags & SERV_WILDCARD) ? "*" : "";
  	  
-@@ -1686,8 +1690,14 @@ void check_servers(int no_loop_check)
+@@ -1691,8 +1695,14 @@ void check_servers(int no_loop_check)
  	   if (++locals <= LOCALS_LOGGED)
  	     my_syslog(LOG_INFO, _("using only locally-known addresses for %s"), serv->domain);
  	 }
