@@ -535,7 +535,7 @@ index 2393f38..1db5cc6 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 95213c5..bea138b 100644
+index 6c36cde..d1beb23 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -306,6 +306,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -592,10 +592,10 @@ index 95213c5..bea138b 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2325,9 +2345,17 @@ unsigned char *tcp_request(int confd, time_t now,
- 	      struct server *master;
- 	      int start;
- 
+@@ -2315,9 +2335,17 @@ unsigned char *tcp_request(int confd, time_t now,
+ 	      blockdata_retrieve(saved_question, (size_t)saved_size, header);
+ 	      size = saved_size;
+ 	      
 -	      if (lookup_domain(daemon->namebuff, gotname, &first, &last))
 +	      if (lookup_domain(daemon->namebuff, gotname, &first, &last)){
  		flags = is_local_answer(now, first, daemon->namebuff);
@@ -611,7 +611,7 @@ index 95213c5..bea138b 100644
  		{
  		  /* No configured servers */
  		  ede = EDE_NOT_READY;
-@@ -2346,7 +2374,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2336,7 +2364,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
