@@ -17,16 +17,6 @@ Original regex patch for dnsmasq 2.63
 Offical dnsmasq:
 - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/)
 
-## Prebuilt package
-
-These packages were maintained by community. Build from source if your distribution was not in the list.
-
-### Archlinux
-
-Package deatails: [archlinux user repo](https://aur.archlinux.org/packages/dnsmasq-regex)
-
-	yay -S dnsmasq-regex
-
 ## Compile
 
 For Debian/Ubuntu:
