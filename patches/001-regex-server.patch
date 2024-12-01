@@ -151,10 +151,10 @@ index e455c3f..6d4274c 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index cf2da77..cefeff1 100644
+index cf2da77..9876014 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
-@@ -27,47 +27,88 @@ void build_server_array(void)
+@@ -27,47 +27,90 @@ void build_server_array(void)
  {
    struct server *serv;
    int count = 0;
@@ -168,9 +168,9 @@ index cf2da77..cefeff1 100644
 -  for (serv = daemon->servers; serv; serv = serv->next)
 +  for (serv = daemon->servers; serv; serv = serv->next){
  #ifdef HAVE_LOOP
--    if (!(serv->flags & SERV_LOOP))
-+    if (!(serv->flags & SERV_LOOP)){
+     if (!(serv->flags & SERV_LOOP))
 +#endif
++    {
 +#ifdef HAVE_REGEX
 +    if(serv->regex)
 +      ++regexserverarraysz;
@@ -237,9 +237,9 @@ index cf2da77..cefeff1 100644
 -  for (serv = daemon->servers; serv; serv = serv->next)
 +  for (serv = daemon->servers; serv; serv = serv->next){
  #ifdef HAVE_LOOP
--    if (!(serv->flags & SERV_LOOP))
-+    if (!(serv->flags & SERV_LOOP)){
+     if (!(serv->flags & SERV_LOOP))
 +#endif
++    {
 +#ifdef HAVE_REGEX
 +    if(serv->regex){
 +      daemon->serverarray[regexserverarrayidx++]=serv;
@@ -248,7 +248,7 @@ index cf2da77..cefeff1 100644
  #endif
        {
  	daemon->serverarray[count] = serv;
-@@ -75,9 +116,18 @@ void build_server_array(void)
+@@ -75,9 +118,18 @@ void build_server_array(void)
  	serv->last_server = -1;
  	count++;
        }
@@ -270,7 +270,7 @@ index cf2da77..cefeff1 100644
    
    qsort(daemon->serverarray, daemon->serverarraysz, sizeof(struct server *), order_qsort);
    
-@@ -86,6 +136,20 @@ void build_server_array(void)
+@@ -86,6 +138,20 @@ void build_server_array(void)
    for (count = 0; count < daemon->serverarraysz; count++)
      if (!(daemon->serverarray[count]->flags & SERV_IS_LOCAL))
        daemon->serverarray[count]->arrayposn = count;
@@ -291,7 +291,7 @@ index cf2da77..cefeff1 100644
  }
  
  /* we're looking for the server whose domain is the longest exact match
-@@ -103,6 +167,11 @@ void build_server_array(void)
+@@ -103,6 +169,11 @@ void build_server_array(void)
  */
  int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  {
@@ -303,7 +303,7 @@ index cf2da77..cefeff1 100644
    int rc, crop_query, nodots;
    ssize_t qlen;
    int try, high, low = 0;
-@@ -111,7 +180,7 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
+@@ -111,7 +182,7 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  
    /* may be no configured servers. */
    if (daemon->serverarraysz == 0)
@@ -312,7 +312,7 @@ index cf2da77..cefeff1 100644
    
    /* find query length and presence of '.' */
    for (cp = qdomain, nodots = 1, qlen = 0; *cp; qlen++, cp++)
-@@ -255,9 +324,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
+@@ -255,9 +326,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  
    /* qlen == -1 when we failed to match even an empty query, if there are no default servers. */
    if (nlow == nhigh || qlen == -1)
@@ -358,7 +358,7 @@ index cf2da77..cefeff1 100644
  }
  
  /* Return first server in group of equivalent servers; this is the "master" record. */
-@@ -270,6 +372,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -270,6 +374,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
  {
    int nlow = seed, nhigh = seed;
    int i;
@@ -373,7 +373,7 @@ index cf2da77..cefeff1 100644
    
    /* expand nlow and nhigh to cover all the records with the same domain 
       nlow is the first, nhigh - 1 is the last. nlow=nhigh means no servers,
-@@ -366,6 +476,89 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -366,6 +478,89 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
@@ -463,7 +463,7 @@ index cf2da77..cefeff1 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -505,6 +698,9 @@ static int order(char *qdomain, size_t qlen, struct server *serv)
+@@ -505,6 +700,9 @@ static int order(char *qdomain, size_t qlen, struct server *serv)
  static int order_servers(struct server *s1, struct server *s2)
  {
    int rc;
@@ -473,7 +473,7 @@ index cf2da77..cefeff1 100644
  
    /* need full comparison of dotless servers in 
       order_qsort() and filter_servers() */
-@@ -626,6 +822,9 @@ int add_update_server(int flags,
+@@ -626,6 +824,9 @@ int add_update_server(int flags,
  		      const char *domain,
  		      union all_addr *local_addr)
  {
@@ -483,7 +483,7 @@ index cf2da77..cefeff1 100644
    struct server *serv = NULL;
    char *alloc_domain;
    
-@@ -641,10 +840,32 @@ int add_update_server(int flags,
+@@ -641,10 +842,32 @@ int add_update_server(int flags,
        if (*domain != 0)
  	flags |= SERV_WILDCARD;
      }
@@ -517,7 +517,7 @@ index cf2da77..cefeff1 100644
      alloc_domain = canonicalise((char *)domain, NULL);
  
    if (!alloc_domain)
-@@ -744,6 +965,16 @@ int add_update_server(int flags,
+@@ -744,6 +967,16 @@ int add_update_server(int flags,
    serv->flags = flags;
    serv->domain = alloc_domain;
    serv->domain_len = strlen(alloc_domain);
@@ -535,7 +535,7 @@ index cf2da77..cefeff1 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 32f37e4..a724a92 100644
+index 10e7496..e427748 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -306,6 +306,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,

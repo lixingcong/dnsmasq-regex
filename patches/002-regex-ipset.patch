@@ -40,7 +40,7 @@ index 6d4274c..eda5962 100644
  
  struct allowlist {
 diff --git a/src/forward.c b/src/forward.c
-index a724a92..3d44b33 100644
+index e427748..6ec2dc3 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -688,6 +688,12 @@ static struct ipsets *domain_find_sets(struct ipsets *setlist, const char *domai
@@ -67,10 +67,10 @@ index a724a92..3d44b33 100644
  
    return ret;
 diff --git a/src/option.c b/src/option.c
-index f4ff7c0..6c9093d 100644
+index ed0d9e1..db404c2 100644
 --- a/src/option.c
 +++ b/src/option.c
-@@ -3176,6 +3176,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3182,6 +3182,18 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  	     while ((end = split_chr(arg, '/'))) 
  	       {
  		 char *domain = NULL;
@@ -89,7 +89,7 @@ index f4ff7c0..6c9093d 100644
  		 /* elide leading dots - they are implied in the search algorithm */
  		 while (*arg == '.')
  		   arg++;
-@@ -3188,6 +3200,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+@@ -3194,6 +3206,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
  		 ipsets = ipsets->next;
  		 memset(ipsets, 0, sizeof(struct ipsets));
  		 ipsets->domain = domain;
