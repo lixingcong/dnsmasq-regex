@@ -5,7 +5,7 @@ PATCHES    := $(sort $(wildcard $(PATCH_DIR)/*.patch))
 PATCHED    := $(sort $(patsubst $(PATCH_DIR)/%.patch, $(PATCH_DIR)/%.patched, $(PATCHES)))
 
 # turn on/off for regex or regex_ipset
-DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET"
+DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET -DHAVE_NFTSET"
 
 all:$(BIN)
 
