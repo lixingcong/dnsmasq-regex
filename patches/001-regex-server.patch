@@ -69,7 +69,7 @@ index 5e65df6..0aed8d7 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 0ca11e4..77dc93a 100644
+index a9ac815..d3ae714 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -162,6 +162,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -127,7 +127,7 @@ index 0ca11e4..77dc93a 100644
    struct server *next;
  };
  
-@@ -1177,6 +1197,9 @@ extern struct daemon {
+@@ -1180,6 +1200,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -137,7 +137,7 @@ index 0ca11e4..77dc93a 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1895,6 +1918,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1898,6 +1921,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */
@@ -535,7 +535,7 @@ index 642db2a..f143074 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 5b31dc9..be449f5 100644
+index fa696e5..71b4016 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -314,6 +314,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -592,37 +592,36 @@ index 5b31dc9..be449f5 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2455,8 +2475,17 @@ unsigned char *tcp_request(int confd, time_t now,
- 		  size = saved_size;
+@@ -2416,8 +2436,17 @@ unsigned char *tcp_request(int confd, time_t now,
+ 	    no_cache_dnssec = 1;
+ 
+ 	  if (lookup_domain(daemon->namebuff, gotname, &first, &last))
++	  {
+ 	    flags = is_local_answer(now, first, daemon->namebuff);
++#ifdef HAVE_REGEX
++	    if(!flags)
++	      flags = is_local_regex_answer(NULL, &first, &last);
++#endif
++	  }
+ 	  else
++#ifdef HAVE_REGEX
++	    if(!(flags = is_local_regex_answer(daemon->namebuff, &first, &last)))
++#endif
+ 	    ede = EDE_NOT_READY;
+ 	  
+ 	  if (!flags && ede == EDE_UNSET)
+@@ -2432,7 +2461,11 @@ unsigned char *tcp_request(int confd, time_t now,
+ 		{
+ 		  master = daemon->serverarray[first];
  		  
- 		  if (lookup_domain(daemon->namebuff, gotname, &first, &last))
-+		  {
- 		    flags = is_local_answer(now, first, daemon->namebuff);
 +#ifdef HAVE_REGEX
-+		    if(!flags)
-+			  flags = is_local_regex_answer(NULL, &first, &last);
-+#endif
-+		  }
- 		  else
-+#ifdef HAVE_REGEX
-+			if(!(flags = is_local_regex_answer(daemon->namebuff, &first, &last)))
-+#endif
- 		    {
- 		      /* No configured servers */
- 		      ede = EDE_NOT_READY;
-@@ -2474,8 +2503,11 @@ unsigned char *tcp_request(int confd, time_t now,
- 		  if (!flags && ede != EDE_NOT_READY)
- 		    {
- 		      master = daemon->serverarray[first];
--		      
-+#ifdef HAVE_REGEX
-+		      if (option_bool(OPT_ORDER) || master->last_server == -1 || master->regex)
++		  if (option_bool(OPT_ORDER) || master->last_server == -1 || master->regex)
 +#else
- 		      if (option_bool(OPT_ORDER) || master->last_server == -1)
+ 		  if (option_bool(OPT_ORDER) || master->last_server == -1)
 +#endif
- 			start = first;
- 		      else
- 			start = master->last_server;
+ 		    start = first;
+ 		  else
+ 		    start = master->last_server;
 diff --git a/src/network.c b/src/network.c
 index 36d9262..eb5f08b 100644
 --- a/src/network.c
