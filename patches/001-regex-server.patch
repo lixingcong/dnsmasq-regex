@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 253ebb9..d561799 100644
+index a503c82..37e92f2 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -24,7 +24,11 @@ MANDIR        = $(PREFIX)/share/man
@@ -34,7 +34,7 @@ index 253ebb9..d561799 100644
   -f $(top)/Makefile dnsmasq 
  
  mostly_clean :
-@@ -114,8 +120,8 @@ all-i18n : $(BUILDDIR)
+@@ -112,8 +118,8 @@ all-i18n : $(BUILDDIR)
  	@cd $(BUILDDIR) && $(MAKE) \
   top="$(top)" \
   i18n=-DLOCALEDIR=\'\"$(LOCALEDIR)\"\' \
@@ -46,7 +46,7 @@ index 253ebb9..d561799 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 5e65df6..0aed8d7 100644
+index 1f1eae2..82024df 100644
 --- a/src/config.h
 +++ b/src/config.h
 @@ -199,6 +199,7 @@ RESOLVFILE
@@ -57,7 +57,7 @@ index 5e65df6..0aed8d7 100644
  
  /* Default locations for important system files. */
  
-@@ -388,6 +389,10 @@ static char *compile_opts =
+@@ -393,6 +394,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -69,7 +69,7 @@ index 5e65df6..0aed8d7 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index a9ac815..d3ae714 100644
+index d563bf7..3e9f665 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -162,6 +162,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -83,7 +83,7 @@ index a9ac815..d3ae714 100644
  #define ADDRSTRLEN INET6_ADDRSTRLEN
  
  /* Async event queue */
-@@ -592,6 +596,10 @@ struct randfd_list {
+@@ -593,6 +597,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -94,7 +94,7 @@ index a9ac815..d3ae714 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -613,6 +621,10 @@ struct server {
+@@ -614,6 +622,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -105,7 +105,7 @@ index a9ac815..d3ae714 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -620,6 +632,10 @@ struct serv_addr4 {
+@@ -621,6 +633,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -116,7 +116,7 @@ index a9ac815..d3ae714 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -627,6 +643,10 @@ struct serv_addr6 {
+@@ -628,6 +644,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -127,7 +127,7 @@ index a9ac815..d3ae714 100644
    struct server *next;
  };
  
-@@ -1180,6 +1200,9 @@ extern struct daemon {
+@@ -1181,6 +1201,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -137,7 +137,7 @@ index a9ac815..d3ae714 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1898,6 +1921,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1904,6 +1927,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */
@@ -151,7 +151,7 @@ index a9ac815..d3ae714 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index 642db2a..f143074 100644
+index 80a3602..1d17f79 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -27,47 +27,90 @@ void build_server_array(void)
@@ -535,10 +535,10 @@ index 642db2a..f143074 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index fa696e5..71b4016 100644
+index 08f229b..0bcb77d 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -314,6 +314,11 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -302,6 +302,11 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
        /* Configured answer. */
        if (flags || ede == EDE_NOT_READY)
  	goto reply;
@@ -550,7 +550,7 @@ index fa696e5..71b4016 100644
        
        if (!(forward = get_new_frec(now, master, 0)))
  	goto reply;
-@@ -392,6 +397,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -370,6 +375,9 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
  	      forward->forwardall = 1;
  	    }
  	  else
@@ -560,7 +560,7 @@ index fa696e5..71b4016 100644
  	    start = master->last_server;
  	}
      }
-@@ -428,7 +436,14 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -410,7 +418,14 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
  	    forward->sentto->failed_queries++;
  	  else
  	    forward->sentto->retrys++;
@@ -576,7 +576,7 @@ index fa696e5..71b4016 100644
  	  if (!filter_servers(forward->sentto->arrayposn, F_SERVER, &first, &last))
  	    goto reply;
  	  
-@@ -478,8 +493,13 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -460,8 +475,13 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
    while (1)
      { 
        int fd;
@@ -592,9 +592,9 @@ index fa696e5..71b4016 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2416,8 +2436,17 @@ unsigned char *tcp_request(int confd, time_t now,
- 	    no_cache_dnssec = 1;
- 
+@@ -2448,8 +2468,17 @@ unsigned char *tcp_request(int confd, time_t now,
+ 	  checking_disabled = header->hb4 & HB4_CD;
+ 	  
  	  if (lookup_domain(daemon->namebuff, gotname, &first, &last))
 +	  {
  	    flags = is_local_answer(now, first, daemon->namebuff);
@@ -610,7 +610,7 @@ index fa696e5..71b4016 100644
  	    ede = EDE_NOT_READY;
  	  
  	  if (!flags && ede == EDE_UNSET)
-@@ -2432,7 +2461,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2464,7 +2493,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
@@ -623,7 +623,7 @@ index fa696e5..71b4016 100644
  		  else
  		    start = master->last_server;
 diff --git a/src/network.c b/src/network.c
-index 36d9262..eb5f08b 100644
+index 15a38fc..afde158 100644
 --- a/src/network.c
 +++ b/src/network.c
 @@ -1667,6 +1667,10 @@ void check_servers(int no_loop_check)
