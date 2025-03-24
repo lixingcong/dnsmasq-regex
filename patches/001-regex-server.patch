@@ -69,7 +69,7 @@ index 1f1eae2..82024df 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index d563bf7..3e9f665 100644
+index 59d1dfa..3c7d0ee 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -162,6 +162,10 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -83,7 +83,7 @@ index d563bf7..3e9f665 100644
  #define ADDRSTRLEN INET6_ADDRSTRLEN
  
  /* Async event queue */
-@@ -593,6 +597,10 @@ struct randfd_list {
+@@ -594,6 +598,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -94,7 +94,7 @@ index d563bf7..3e9f665 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -614,6 +622,10 @@ struct server {
+@@ -615,6 +623,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -105,7 +105,7 @@ index d563bf7..3e9f665 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -621,6 +633,10 @@ struct serv_addr4 {
+@@ -622,6 +634,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -116,7 +116,7 @@ index d563bf7..3e9f665 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -628,6 +644,10 @@ struct serv_addr6 {
+@@ -629,6 +645,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -127,7 +127,7 @@ index d563bf7..3e9f665 100644
    struct server *next;
  };
  
-@@ -1181,6 +1201,9 @@ extern struct daemon {
+@@ -1182,6 +1202,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -137,7 +137,7 @@ index d563bf7..3e9f665 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1904,6 +1927,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1905,6 +1928,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */
@@ -535,12 +535,12 @@ index 80a3602..1d17f79 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index 08f229b..0bcb77d 100644
+index 28b6ffd..e8a57f4 100644
 --- a/src/forward.c
 +++ b/src/forward.c
-@@ -302,6 +302,11 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
-       /* Configured answer. */
-       if (flags || ede == EDE_NOT_READY)
+@@ -396,6 +396,11 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
+       p = (unsigned char *)(header+1);
+       if (!extract_name(header, plen, &p, (char *)&forward->frec_src.encode_bitmap, EXTR_NAME_FLIP, 1))
  	goto reply;
 +
 +#ifdef HAVE_REGEX
@@ -548,9 +548,9 @@ index 08f229b..0bcb77d 100644
 +		goto reply;
 +#endif
        
-       if (!(forward = get_new_frec(now, master, 0)))
- 	goto reply;
-@@ -370,6 +375,9 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
+       /* Keep copy of query for retries and move to TCP */
+       if (!(forward->stash = blockdata_alloc((char *)header, plen)))
+@@ -436,6 +441,9 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
  	      forward->forwardall = 1;
  	    }
  	  else
@@ -560,7 +560,7 @@ index 08f229b..0bcb77d 100644
  	    start = master->last_server;
  	}
      }
-@@ -410,7 +418,14 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -476,7 +484,14 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
  	    forward->sentto->failed_queries++;
  	  else
  	    forward->sentto->retrys++;
@@ -576,7 +576,7 @@ index 08f229b..0bcb77d 100644
  	  if (!filter_servers(forward->sentto->arrayposn, F_SERVER, &first, &last))
  	    goto reply;
  	  
-@@ -460,8 +475,13 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
+@@ -526,8 +541,13 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
    while (1)
      { 
        int fd;
@@ -592,7 +592,7 @@ index 08f229b..0bcb77d 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2448,8 +2468,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2576,8 +2596,17 @@ unsigned char *tcp_request(int confd, time_t now,
  	  checking_disabled = header->hb4 & HB4_CD;
  	  
  	  if (lookup_domain(daemon->namebuff, gotname, &first, &last))
@@ -610,7 +610,7 @@ index 08f229b..0bcb77d 100644
  	    ede = EDE_NOT_READY;
  	  
  	  if (!flags && ede == EDE_UNSET)
-@@ -2464,7 +2493,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2592,7 +2621,11 @@ unsigned char *tcp_request(int confd, time_t now,
  		{
  		  master = daemon->serverarray[first];
  		  
