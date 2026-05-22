@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index a503c82..f28ab37 100644
+index 70309e7..5feda62 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -24,7 +24,11 @@ MANDIR        = $(PREFIX)/share/man
@@ -51,10 +51,10 @@ index a503c82..f28ab37 100644
  	for f in `cd $(PO); echo *.po`; do \
  		cd $(top) && cd $(BUILDDIR) && $(MAKE) top="$(top)" -f $(top)/Makefile $${f%.po}.mo; \
 diff --git a/src/config.h b/src/config.h
-index 0994f95..38aaa0b 100644
+index 446868e..adfc0d7 100644
 --- a/src/config.h
 +++ b/src/config.h
-@@ -203,6 +203,7 @@ RESOLVFILE
+@@ -205,6 +205,7 @@ RESOLVFILE
  /* #define HAVE_CONNTRACK */
  /* #define HAVE_DNSSEC */
  /* #define HAVE_NFTSET */
@@ -62,7 +62,7 @@ index 0994f95..38aaa0b 100644
  
  /* Default locations for important system files. */
  
-@@ -410,6 +411,10 @@ static char *compile_opts =
+@@ -419,6 +420,10 @@ static char *compile_opts =
  "no-"
  #endif
  "i18n "
@@ -74,7 +74,7 @@ index 0994f95..38aaa0b 100644
  "IDN2 "
  #else
 diff --git a/src/dnsmasq.h b/src/dnsmasq.h
-index 254bacd..2229abc 100644
+index 04e13ce..f1c1f7b 100644
 --- a/src/dnsmasq.h
 +++ b/src/dnsmasq.h
 @@ -168,6 +168,24 @@ extern int capget(cap_user_header_t header, cap_user_data_t data);
@@ -102,7 +102,7 @@ index 254bacd..2229abc 100644
  #define ADDRSTRLEN INET6_ADDRSTRLEN
  
  /* Async event queue */
-@@ -607,6 +625,10 @@ struct randfd_list {
+@@ -615,6 +633,10 @@ struct randfd_list {
  struct server {
    u16 flags, domain_len;
    char *domain;
@@ -113,7 +113,7 @@ index 254bacd..2229abc 100644
    struct server *next;
    int serial, arrayposn;
    int last_server;
-@@ -628,6 +650,10 @@ struct server {
+@@ -636,6 +658,10 @@ struct server {
  struct serv_addr4 {
    u16 flags, domain_len;
    char *domain;
@@ -124,7 +124,7 @@ index 254bacd..2229abc 100644
    struct server *next;
    struct in_addr addr;
  };
-@@ -635,6 +661,10 @@ struct serv_addr4 {
+@@ -643,6 +669,10 @@ struct serv_addr4 {
  struct serv_addr6 {
    u16 flags, domain_len;
    char *domain;
@@ -135,7 +135,7 @@ index 254bacd..2229abc 100644
    struct server *next;
    struct in6_addr addr;
  };
-@@ -642,6 +672,10 @@ struct serv_addr6 {
+@@ -650,6 +680,10 @@ struct serv_addr6 {
  struct serv_local {
    u16 flags, domain_len;
    char *domain;
@@ -146,7 +146,7 @@ index 254bacd..2229abc 100644
    struct server *next;
  };
  
-@@ -1199,6 +1233,9 @@ extern struct daemon {
+@@ -1207,6 +1241,9 @@ extern struct daemon {
    struct rebind_domain *no_rebind;
    int server_has_wildcard;
    int serverarraysz, serverarrayhwm;
@@ -156,7 +156,7 @@ index 254bacd..2229abc 100644
    struct ipsets *ipsets, *nftsets;
    u32 allowlist_mask;
    struct allowlist *allowlists;
-@@ -1937,6 +1974,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
+@@ -1960,6 +1997,12 @@ void dump_packet_icmp(int mask, void *packet, size_t len, union mysockaddr *src,
  #endif
  
  /* domain-match.c */
@@ -170,7 +170,7 @@ index 254bacd..2229abc 100644
  int lookup_domain(char *qdomain, int flags, int *lowout, int *highout);
  int filter_servers(int seed, int flags, int *lowout, int *highout);
 diff --git a/src/domain-match.c b/src/domain-match.c
-index 935a2d3..97b7061 100644
+index 208cd21..53471e0 100644
 --- a/src/domain-match.c
 +++ b/src/domain-match.c
 @@ -27,47 +27,90 @@ void build_server_array(void)
@@ -286,9 +286,9 @@ index 935a2d3..97b7061 100644
 +    daemon->serverarray[count++] = serv;
 +  }
    
-   qsort(daemon->serverarray, daemon->serverarraysz, sizeof(struct server *), order_qsort);
-   
-@@ -86,6 +138,20 @@ void build_server_array(void)
+   /* serverarray may be unallocated if we have no servers yet. */
+   if (daemon->serverarray)
+@@ -88,6 +140,20 @@ void build_server_array(void)
    for (count = 0; count < daemon->serverarraysz; count++)
      if (!(daemon->serverarray[count]->flags & SERV_IS_LOCAL))
        daemon->serverarray[count]->arrayposn = count;
@@ -309,7 +309,7 @@ index 935a2d3..97b7061 100644
  }
  
  /* we're looking for the server whose domain is the longest exact match
-@@ -103,6 +169,11 @@ void build_server_array(void)
+@@ -105,6 +171,11 @@ void build_server_array(void)
  */
  int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  {
@@ -321,7 +321,7 @@ index 935a2d3..97b7061 100644
    int rc, crop_query, nodots;
    ssize_t qlen;
    int try, high, low = 0;
-@@ -111,7 +182,7 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
+@@ -113,7 +184,7 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
    
    /* may be no configured servers. */
    if (daemon->serverarraysz == 0)
@@ -330,7 +330,7 @@ index 935a2d3..97b7061 100644
  
    /* DS records should come from the parent domain. */
    if (flags & F_DS)
-@@ -269,9 +340,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
+@@ -271,9 +342,42 @@ int lookup_domain(char *domain, int flags, int *lowout, int *highout)
  
    /* qlen == -1 when we failed to match even an empty query, if there are no default servers. */
    if (nlow == nhigh || qlen == -1)
@@ -376,7 +376,7 @@ index 935a2d3..97b7061 100644
  }
  
  int server_samegroup(struct server *a, struct server *b)
-@@ -283,6 +387,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -285,6 +389,14 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
  {
    int nlow = seed, nhigh = seed;
    int i;
@@ -391,7 +391,7 @@ index 935a2d3..97b7061 100644
    
    /* expand nlow and nhigh to cover all the records with the same domain 
       nlow is the first, nhigh - 1 is the last. nlow=nhigh means no servers,
-@@ -374,6 +486,125 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
+@@ -376,6 +488,125 @@ int filter_servers(int seed, int flags, int *lowout, int *highout)
    return (nlow != nhigh);
  }
  
@@ -517,7 +517,7 @@ index 935a2d3..97b7061 100644
  int is_local_answer(time_t now, int first, char *name)
  {
    int flags = 0;
-@@ -529,6 +760,9 @@ static int order(char *qdomain, size_t qlen, struct server *serv)
+@@ -531,6 +762,9 @@ static int order(char *qdomain, size_t qlen, struct server *serv)
  static int order_servers(struct server *s1, struct server *s2)
  {
    int rc;
@@ -527,7 +527,7 @@ index 935a2d3..97b7061 100644
  
    /* need full comparison of dotless servers in 
       order_qsort() and filter_servers() */
-@@ -615,6 +849,10 @@ void mark_servers(int flag)
+@@ -617,6 +851,10 @@ void mark_servers(int flag)
  	  {
  	    *up = next;
  	    free(serv->domain);
@@ -538,7 +538,7 @@ index 935a2d3..97b7061 100644
  	    free(serv);
  	  }
  	else 
-@@ -635,6 +873,10 @@ void cleanup_servers(void)
+@@ -637,6 +875,10 @@ void cleanup_servers(void)
           server_gone(serv);
           *up = serv->next;
  	 free(serv->domain);
@@ -549,7 +549,7 @@ index 935a2d3..97b7061 100644
  	 free(serv);
         }
        else 
-@@ -652,6 +894,9 @@ int add_update_server(int flags,
+@@ -654,6 +896,9 @@ int add_update_server(int flags,
  		      const char *domain,
  		      union all_addr *local_addr)
  {
@@ -559,7 +559,7 @@ index 935a2d3..97b7061 100644
    struct server *serv = NULL;
    char *alloc_domain;
    
-@@ -667,10 +912,32 @@ int add_update_server(int flags,
+@@ -669,10 +914,32 @@ int add_update_server(int flags,
        if (*domain != 0)
  	flags |= SERV_WILDCARD;
      }
@@ -593,7 +593,7 @@ index 935a2d3..97b7061 100644
      alloc_domain = canonicalise((char *)domain, NULL);
  
    if (!alloc_domain)
-@@ -772,6 +1039,16 @@ int add_update_server(int flags,
+@@ -774,6 +1041,16 @@ int add_update_server(int flags,
    serv->flags = flags;
    serv->domain = alloc_domain;
    serv->domain_len = strlen(alloc_domain);
@@ -611,7 +611,7 @@ index 935a2d3..97b7061 100644
    return 1;
  }
 diff --git a/src/forward.c b/src/forward.c
-index e2f64c0..be969e3 100644
+index 97180e5..7956df8 100644
 --- a/src/forward.c
 +++ b/src/forward.c
 @@ -393,6 +393,11 @@ static void forward_query(int udpfd, union mysockaddr *udpaddr,
@@ -668,7 +668,7 @@ index e2f64c0..be969e3 100644
        if ((fd = allocate_rfd(&forward->rfds, srv)) != -1)
  	{
  	  
-@@ -2574,8 +2594,17 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2596,8 +2616,17 @@ void tcp_request(int confd, time_t now, struct iovec *bigbuff,
  	  checking_disabled = header->hb4 & HB4_CD;
  	  
  	  if (lookup_domain(daemon->namebuff, gotname, &first, &last))
@@ -686,7 +686,7 @@ index e2f64c0..be969e3 100644
  	    ede = EDE_NOT_READY;
  	  
  	  if (!flags && ede == EDE_UNSET)
-@@ -2590,7 +2619,11 @@ unsigned char *tcp_request(int confd, time_t now,
+@@ -2612,7 +2641,11 @@ void tcp_request(int confd, time_t now, struct iovec *bigbuff,
  		{
  		  master = daemon->serverarray[first];
  		  
@@ -699,7 +699,7 @@ index e2f64c0..be969e3 100644
  		  else
  		    start = master->last_server;
 diff --git a/src/network.c b/src/network.c
-index fd602f8..e77a9e1 100644
+index d5c9fee..29db928 100644
 --- a/src/network.c
 +++ b/src/network.c
 @@ -1638,6 +1638,10 @@ void check_servers(int no_loop_check)

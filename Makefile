@@ -2,38 +2,36 @@ BIN := dnsmasq/src/dnsmasq
 
 PATCH_DIR  := patches
 PATCHES    := $(sort $(wildcard $(PATCH_DIR)/*.patch))
-PATCHED    := $(sort $(patsubst $(PATCH_DIR)/%.patch, $(PATCH_DIR)/%.patched, $(PATCHES)))
+PATCHED    := $(PATCH_DIR)/flag.patched
 
 # turn on/off for regex or regex_ipset
 DNSMASQ_COPTS="-DHAVE_REGEX -DHAVE_REGEX_IPSET -DHAVE_NFTSET"
 
 all:$(BIN)
-
-.PHONY: submodule
-submodule:
-	cd dnsmasq && $(MAKE) COPTS=$(DNSMASQ_COPTS)
-
-$(BIN):$(PATCHED)
-	cd dnsmasq && $(MAKE) COPTS=$(DNSMASQ_COPTS)
+$(BIN): $(PATCHED)
+	$(MAKE) submodule
 	$(MAKE) remove_patched
 	$(MAKE) reset_submodule
 
-# disable parallel build for patching files
-# for preventing from producing out of order chunks
-.NOTPARALLEL: %.patched
-%.patched:%.patch
-	@echo "Applying $^"
-	@patch -p 1 -d dnsmasq < $^ && touch $@
-	@echo
+$(PATCHED):
+	@for i in $(PATCHES); do \
+		echo "Applying $$i"; \
+		patch -p1 -d dnsmasq < $$i; \
+		echo ""; done
+	@touch $(PATCHED)
+
+.PHONY: submodule
+submodule:
+	$(MAKE) -C dnsmasq COPTS=$(DNSMASQ_COPTS)
 
 .PHONY: reset_submodule
 reset_submodule:
-	git submodule foreach --recursive git reset --hard
+	@git submodule foreach --recursive git reset --hard
 
 .PHONY: remove_patched
 remove_patched:
-	find . \( -name \*.orig -o -name \*.rej \) -delete
-	rm -rf $(PATCHED)
+	@find . \( -name \*.orig -o -name \*.rej \) -delete
+	@rm -rf $(PATCHED)
 
 .PHONY: clean
 clean:
